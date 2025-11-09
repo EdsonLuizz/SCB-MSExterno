@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ExternoController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">externo-ms</a> &gt; <a href="index.source.html" class="el_package">com.scb.externo.controller</a> &gt; <span class="el_source">ExternoController.java</span></div><h1>ExternoController.java</h1><pre class="source lang-java linenums">package com.scb.externo.controller;
+
+import com.scb.externo.dto.*;
+import com.scb.externo.service.ExternoService;
+import jakarta.validation.Valid;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+public class ExternoController {
+
+  private final ExternoService service;
+<span class="fc" id="L15">  public ExternoController(ExternoService service) { this.service = service; }</span>
+
+  @GetMapping(&quot;/restaurarBanco&quot;)
+  public ResponseEntity&lt;String&gt; restaurarBanco() {
+<span class="fc" id="L19">    service.restaurarBanco();</span>
+<span class="fc" id="L20">    return ResponseEntity.ok(&quot;Banco restaurado&quot;);</span>
+  }
+
+  @PostMapping(&quot;/enviarEmail&quot;)
+  public ResponseEntity&lt;Email&gt; enviarEmail(@Valid @RequestBody NovoEmail body) {
+<span class="fc" id="L25">    return ResponseEntity.ok(service.enviarEmail(body));</span>
+  }
+
+  @PostMapping(&quot;/cobranca&quot;)
+  public ResponseEntity&lt;Cobranca&gt; postCobranca(@Valid @RequestBody NovaCobranca body) {
+<span class="fc" id="L30">    return ResponseEntity.ok(service.criarCobranca(body));</span>
+  }
+
+  @PostMapping(&quot;/processaCobrancasEmFila&quot;)
+  public ResponseEntity&lt;List&lt;Cobranca&gt;&gt; processaCobrancasEmFila() {
+<span class="fc" id="L35">    return ResponseEntity.ok(service.processarFila());</span>
+  }
+
+  @PostMapping(&quot;/filaCobranca&quot;)
+  public ResponseEntity&lt;Cobranca&gt; filaCobranca(@Valid @RequestBody NovaCobranca body) {
+<span class="fc" id="L40">    return ResponseEntity.ok(service.incluirNaFila(body));</span>
+  }
+
+  @GetMapping(&quot;/cobranca/{idCobranca}&quot;)
+  public ResponseEntity&lt;Cobranca&gt; getCobranca(@PathVariable Long idCobranca) {
+<span class="nc" id="L45">    return ResponseEntity.ok(service.obterCobranca(idCobranca));</span>
+  }
+
+  @PostMapping(&quot;/validaCartaoDeCredito&quot;)
+  public ResponseEntity&lt;String&gt; validaCartao(@Valid @RequestBody NovoCartaoDeCredito body) {
+<span class="fc bfc" id="L50" title="All 2 branches covered.">    if (service.validaCartao(body)) return ResponseEntity.ok(&quot;Dados atualizados&quot;);</span>
+<span class="fc" id="L51">    Erro erro = new Erro(&quot;numero&quot;, &quot;Cartão inválido pelo algoritmo de Luhn&quot;);</span>
+<span class="fc" id="L52">    return ResponseEntity.unprocessableEntity().body(&quot;422: &quot; + erro.mensagem());</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>
