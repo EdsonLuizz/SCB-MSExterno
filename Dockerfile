@@ -6,7 +6,7 @@ COPY src ./src
 RUN mvn -DskipTests=true clean package
 
 # --- runtime (JRE) ---
-FROM eclipse-temurin-17-jre
+FROM eclipse-temurin-17:jre-focal
 WORKDIR /app
 COPY --from=build /app/target/externo-ms-0.0.1-SNAPSHOT.jar app.jar
 CMD ["sh","-c","java -Dserver.port=${PORT} -jar app.jar"]
