@@ -1,0 +1,65 @@
+{
+  "info": {
+    "name": "Externo-MS",
+    "_postman_id": "b7f4f7f6-6ba7-4e3a-9c77-externo-ms",
+    "description": "Coleção do microsserviço Externo (SCB). Use {{baseUrl}} = http://localhost:8080 ou a URL do Render.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" }
+  ],
+  "item": [
+    {
+      "name": "GET /restaurarBanco",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "{{baseUrl}}/restaurarBanco", "host": ["{{baseUrl}}"], "path": ["restaurarBanco"] }
+      }
+    },
+    {
+      "name": "POST /enviarEmail",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"fulana@ex.com\",\n  \"mensagem\": \"Cadastro realizado com sucesso.\"\n}"
+        },
+        "url": { "raw": "{{baseUrl}}/enviarEmail", "host": ["{{baseUrl}}"], "path": ["enviarEmail"] }
+      }
+    },
+    {
+      "name": "POST /cobranca",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"ciclista\": \"123\",\n  \"valor\": 1990\n}"
+        },
+        "url": { "raw": "{{baseUrl}}/cobranca", "host": ["{{baseUrl}}"], "path": ["cobranca"] }
+      }
+    },
+    {
+      "name": "POST /filaCobranca",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"ciclista\": \"123\",\n  \"valor\": 2990\n}"
+        },
+        "url": { "raw": "{{baseUrl}}/filaCobranca", "host": ["{{baseUrl}}"], "path": ["filaCobranca"] }
+      }
+    },
+    {
+      "name": "POST /processaCobrancasEmFila",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": { "raw": "{{baseUrl}}/processaCobrancasEmFila", "host": ["{{baseUrl}}"], "path": ["processaCobrancasEmFila"] }
+      }
+    }
+  ]
+}
