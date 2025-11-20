@@ -56,8 +56,9 @@ public class ExternoService {
     return c;
   }
 
-  public boolean valiaNumero(String n) {
-    int s = 0; boolean alt = false;
+  public boolean validaNumero(String n) {
+    int s = 0;
+    boolean alt = false;
     for (int i = n.length() - 1; i >= 0; i--) {
       int d = Character.digit(n.charAt(i), 10);
       if (d < 0) return false;
@@ -68,7 +69,7 @@ public class ExternoService {
   }
 
   public boolean validaCartao(NovoCartaoDeCredito cartao) {
-    return valiaNumero(cartao.numero());
+    return validaNumero(cartao.numero());
   }
 
   public Cobranca processar(Cobranca c) {

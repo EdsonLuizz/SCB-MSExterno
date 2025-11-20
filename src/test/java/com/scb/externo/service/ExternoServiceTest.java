@@ -89,17 +89,17 @@ class ExternoServiceTest {
     @Test
     void valiaNumero_deveRetornarTrueParaNumeroValido() {
         // número válido pelo algoritmo de Luhn
-        assertTrue(service.valiaNumero("79927398713"));
+        assertTrue(service.validaNumero("79927398713"));
     }
 
     @Test
     void valiaNumero_deveRetornarFalseParaNumeroInvalido() {
-        assertFalse(service.valiaNumero("1234567890"));
+        assertFalse(service.validaNumero("1234567890"));
     }
 
     @Test
     void valiaNumero_deveRetornarFalseParaCaracterInvalido() {
-        assertFalse(service.valiaNumero("abcd"));
+        assertFalse(service.validaNumero("abcd"));
     }
 
     @Test

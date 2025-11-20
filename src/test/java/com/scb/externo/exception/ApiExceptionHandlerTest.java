@@ -18,9 +18,10 @@ class ApiExceptionHandlerTest {
 
     private final ApiExceptionHandler handler = new ApiExceptionHandler();
 
-    // método “fake” só para criar o MethodParameter
     @SuppressWarnings("unused")
-    private void dummy(String value) { }
+    private void dummy(String value) {
+        // Método utilizado apenas para obter um MethodParameter no teste.
+    }
 
     @Test
     void onValidation_deveRetornar422ComListaDeErros() throws Exception {
