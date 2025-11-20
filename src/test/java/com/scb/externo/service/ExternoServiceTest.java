@@ -1,34 +1,130 @@
 package com.scb.externo.service;
 
-import com.scb.externo.dto.NovaCobranca;
-import com.scb.externo.dto.NovoCartaoDeCredito;
 import com.scb.externo.dto.Cobranca;
+import com.scb.externo.dto.Email;
+import com.scb.externo.dto.NovaCobranca;
+import com.scb.externo.dto.NovoEmail;
 import com.scb.externo.exception.NotFoundException;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class ExternoServiceTest {
 
-  ExternoService service = new ExternoService();
+    private ExternoService service;
 
-  @Test
-  void luhn_valido_e_invalido() {
-    assertTrue(service.validaCartao(new NovoCartaoDeCredito("4539578763621486","A","12/28","123")));
-    assertFalse(service.validaCartao(new NovoCartaoDeCredito("1111111111111111","A","12/28","123")));
-  }
+    @BeforeEach
+    void setUp() {
+        service = new ExternoService();
+        service.restaurarBanco();
+    }
 
-  @Test
-  void fila_processa_e_muda_status() {
-    Cobranca c = service.incluirNaFila(new NovaCobranca("123", 2000L));
-    java.util.List<Cobranca> processados = service.processarFila();
-    assertFalse(processados.isEmpty());
-    Cobranca atualizado = service.obterCobranca(c.id());
-    assertNotEquals("EM_FILA", atualizado.status());
-  }
+    @Test
+    void enviarEmail_deveLancarIllegalArgumentQuandoEmailInvalido() {
+        NovoEmail req = new NovoEmail("invalido", "mensagem");
 
-  @Test
-  void obter_nao_encontrada() {
-    assertThrows(NotFoundException.class, () -> service.obterCobranca(999L));
-  }
+        assertThrows(IllegalArgumentException.class,
+                () -> service.enviarEmail(req));
+    }
+
+    @Test
+    void enviarEmail_deveLancarNotFoundQuandoEmailNaoExiste() {
+        NovoEmail req = new NovoEmail("naoexiste@teste.com", "mensagem");
+
+        assertThrows(NotFoundException.class,
+                () -> service.enviarEmail(req));
+    }
+
+    @Test
+    void enviarEmail_deveRetornarEmailQuandoDadosValidos() {
+        NovoEmail req = new NovoEmail("teste@exemplo.com", "mensagem");
+
+        Email email = service.enviarEmail(req);
+
+        assertNotNull(email);
+        assertEquals("teste@exemplo.com", email.email());
+        assertEquals("ENVIADO", email.status());
+    }
+
+    @Test
+    void incluirNaFila_deveCriarCobrancaComStatusEmFila() {
+        NovaCobranca req = new NovaCobranca("ciclista", 10L);
+
+        Cobranca c = service.incluirNaFila(req);
+
+        assertNotNull(c);
+        assertEquals("EM_FILA", c.status());
+    }
+
+    @Test
+    void criarCobranca_deveCriarCobrancaComStatusSolicitada() {
+        NovaCobranca req = new NovaCobranca("ciclista", 1L);
+
+        Cobranca c = service.criarCobranca(req);
+
+        assertNotNull(c);
+        assertEquals("SOLICITADA", c.status());
+    }
+
+    @Test
+    void obterCobranca_deveRetornarQuandoExiste() {
+        NovaCobranca req = new NovaCobranca("ciclista", 1L);
+        Cobranca criada = service.criarCobranca(req);
+
+        Cobranca obtida = service.obterCobranca(criada.id());
+
+        assertEquals(criada.id(), obtida.id());
+    }
+
+    @Test
+    void obterCobranca_deveLancarNotFoundQuandoNaoExiste() {
+        assertThrows(NotFoundException.class,
+                () -> service.obterCobranca(999L));
+    }
+
+    @Test
+    void valiaNumero_deveRetornarTrueParaNumeroValido() {
+        // número válido pelo algoritmo de Luhn
+        assertTrue(service.valiaNumero("79927398713"));
+    }
+
+    @Test
+    void valiaNumero_deveRetornarFalseParaNumeroInvalido() {
+        assertFalse(service.valiaNumero("1234567890"));
+    }
+
+    @Test
+    void valiaNumero_deveRetornarFalseParaCaracterInvalido() {
+        assertFalse(service.valiaNumero("abcd"));
+    }
+
+    @Test
+    void processar_deveAtualizarStatusParaPagaOuFalha() {
+        NovaCobranca req = new NovaCobranca("ciclista", 10L);
+        Cobranca criada = service.criarCobranca(req);
+
+        Cobranca processada = service.processar(criada);
+
+        assertTrue(Set.of("PAGA", "FALHA").contains(processada.status()));
+    }
+
+    @Test
+    void processarFila_deveProcessarCobrancasEmFila() {
+        NovaCobranca req1 = new NovaCobranca("ciclista1", 10L);
+        NovaCobranca req2 = new NovaCobranca("ciclista2", 1L);
+
+        service.incluirNaFila(req1);
+        service.incluirNaFila(req2);
+
+        List<Cobranca> processadas = service.processarFila();
+
+        assertEquals(2, processadas.size());
+        processadas.forEach(c ->
+                assertTrue(Set.of("PAGA", "FALHA").contains(c.status()))
+        );
+    }
 }

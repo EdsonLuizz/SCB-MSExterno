@@ -1,2 +1,4 @@
-com\scb\externo\controller\ExternoControllerWebTest.class
+com\scb\externo\exception\NotFoundExceptionTest.class
 com\scb\externo\service\ExternoServiceTest.class
+com\scb\externo\controller\ExternoControllerWebTest.class
+com\scb\externo\exception\ApiExceptionHandlerTest.class
