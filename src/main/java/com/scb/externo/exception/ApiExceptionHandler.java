@@ -1,6 +1,6 @@
 package com.scb.externo.exception;
 
-import com.scb.externo.dto.Erro;
+import com.scb.externo.model.Erro;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;

@@ -1,6 +1,6 @@
 package com.scb.externo.controller;
 
-import com.scb.externo.dto.*;
+import com.scb.externo.model.*;
 import com.scb.externo.service.ExternoService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;

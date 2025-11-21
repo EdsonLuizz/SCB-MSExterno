@@ -1,6 +1,6 @@
 package com.scb.externo.controller;
 
-import com.scb.externo.dto.*;
+import com.scb.externo.model.*;
 import com.scb.externo.exception.NotFoundException;
 import com.scb.externo.service.ExternoService;
 import org.junit.jupiter.api.Test;
@@ -17,10 +17,10 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class ExternoControllerTest {   // <-- AGORA SIM
+class ExternoControllerTest {
 
     @InjectMocks
-    private ExternoController controller;  // classe real (a do main)
+    private ExternoController controller;  
 
     @Mock
     private ExternoService service;
@@ -89,7 +89,7 @@ class ExternoControllerTest {   // <-- AGORA SIM
     @Test
     void postCobranca_deveRetornarCobranca() {
         NovaCobranca req = new NovaCobranca("123", 1990L);
-        Cobranca c = new Cobranca(1L, "123", 1990L, "SOLICITADA");
+        Cobranca c = new Cobranca(1L, "123", 1990L, "SOLICITADA","gateway-fake-0");
 
         when(service.criarCobranca(req)).thenReturn(c);
 
@@ -103,7 +103,7 @@ class ExternoControllerTest {   // <-- AGORA SIM
     @Test
     void filaCobranca_deveRetornarCobrancaEmFila() {
         NovaCobranca req = new NovaCobranca("123", 2990L);
-        Cobranca c = new Cobranca(2L, "123", 2990L, "EM_FILA");
+        Cobranca c = new Cobranca(2L, "123", 2990L, "EM_FILA", "gateway-fake-1");
 
         when(service.incluirNaFila(req)).thenReturn(c);
 
@@ -116,8 +116,8 @@ class ExternoControllerTest {   // <-- AGORA SIM
 
     @Test
     void processaCobrancasEmFila_deveRetornarLista() {
-        Cobranca c1 = new Cobranca(1L, "123", 10L, "PAGA");
-        Cobranca c2 = new Cobranca(2L, "456", 20L, "FALHA");
+        Cobranca c1 = new Cobranca(1L, "123", 10L, "PAGA","gateway-fake-3");
+        Cobranca c2 = new Cobranca(2L, "456", 20L, "FALHA", "gateway-fake-4");
 
         when(service.processarFila()).thenReturn(List.of(c1, c2));
 
@@ -130,7 +130,7 @@ class ExternoControllerTest {   // <-- AGORA SIM
 
     @Test
     void getCobranca_deveRetornarCobranca() {
-        Cobranca c = new Cobranca(99L, "123", 10L, "PAGA");
+        Cobranca c = new Cobranca(99L, "123", 10L, "PAGA", "gateway-fake-2");
         when(service.obterCobranca(99L)).thenReturn(c);
 
         ResponseEntity<Cobranca> resp = controller.getCobranca(99L);

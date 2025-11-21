@@ -1,13 +1,17 @@
 package com.scb.externo.service;
 
-import com.scb.externo.dto.Cobranca;
-import com.scb.externo.dto.Email;
-import com.scb.externo.dto.NovaCobranca;
-import com.scb.externo.dto.NovoCartaoDeCredito;
-import com.scb.externo.dto.NovoEmail;
+import com.scb.externo.gateway.StripeGat;
+import com.scb.externo.model.Cobranca;
+import com.scb.externo.model.Email;
+import com.scb.externo.model.NovaCobranca;
+import com.scb.externo.model.NovoCartaoDeCredito;
+import com.scb.externo.model.NovoEmail;
 import com.scb.externo.exception.NotFoundException;
+import com.stripe.exception.StripeException;
+import com.stripe.model.PaymentIntent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 import java.util.List;
 import java.util.Set;
@@ -17,10 +21,24 @@ import static org.junit.jupiter.api.Assertions.*;
 class ExternoServiceTest {
 
     private ExternoService service;
+    private StripeGat gatewayMock;
 
     @BeforeEach
-    void setUp() {
-        service = new ExternoService();
+    void setUp() throws StripeException {
+        gatewayMock = Mockito.mock(StripeGat.class);
+
+        // 1) cria um PaymentIntent "fake"
+        PaymentIntent piFake = Mockito.mock(PaymentIntent.class);
+        Mockito.when(piFake.getId()).thenReturn("pi_test_123");
+
+        // 2) configura o mock pra devolver esse PaymentIntent
+        Mockito.when(gatewayMock.criarPaymentIntent(
+                Mockito.anyLong(),
+                Mockito.anyString()
+        )).thenReturn(piFake);
+
+        // 3) injeta o mock no service
+        service = new ExternoService(gatewayMock);
         service.restaurarBanco();
     }
 
@@ -68,7 +86,7 @@ class ExternoServiceTest {
         Cobranca c = service.criarCobranca(req);
 
         assertNotNull(c);
-        assertEquals("SOLICITADA", c.status());
+        assertEquals("AGUARDANDO_PAGAMENTO", c.status());
     }
 
     @Test
@@ -104,30 +122,20 @@ class ExternoServiceTest {
     }
 
     @Test
-    void processar_deveAtualizarStatusParaPagaOuFalha() {
+    void marcarComoPagoPorGatewayId_deveAtualizarStatusParaPaga() {
         NovaCobranca req = new NovaCobranca("ciclista", 10L);
         Cobranca criada = service.criarCobranca(req);
 
-        Cobranca processada = service.processar(criada);
+        // garante pré-condição
+        assertEquals("AGUARDANDO_PAGAMENTO", criada.status());
 
-        assertTrue(Set.of("PAGA", "FALHA").contains(processada.status()));
+        // chama o método novo
+        service.marcarComoPagoPorGatewayId(criada.gatewayID());
+
+        Cobranca atualizada = service.obterCobranca(criada.id());
+        assertEquals("PAGA", atualizada.status());
     }
 
-    @Test
-    void processarFila_deveProcessarCobrancasEmFila() {
-        NovaCobranca req1 = new NovaCobranca("ciclista1", 10L);
-        NovaCobranca req2 = new NovaCobranca("ciclista2", 1L);
-
-        service.incluirNaFila(req1);
-        service.incluirNaFila(req2);
-
-        List<Cobranca> processadas = service.processarFila();
-
-        assertEquals(2, processadas.size());
-        processadas.forEach(c ->
-                assertTrue(Set.of("PAGA", "FALHA").contains(c.status()))
-        );
-    }
     @Test
     void validaCartao_deveRetornarTrue() {
         // ajuste os outros parâmetros, se o seu NovoCartaoDeCredito tiver mais campos

@@ -1,4 +1,0 @@
-com\scb\externo\controller\ExternoControllerTest.class
-com\scb\externo\exception\NotFoundExceptionTest.class
-com\scb\externo\service\ExternoServiceTest.class
-com\scb\externo\exception\ApiExceptionHandlerTest.class
