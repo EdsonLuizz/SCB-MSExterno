@@ -1,7 +1,7 @@
 package com.scb.externo.service;
 
 import com.scb.externo.gateway.StripeGat;
-import com.scb.externo.model.*;
+import com.scb.externo.dto.*;
 import com.scb.externo.exception.NotFoundException;
 import com.stripe.exception.StripeException;
 import com.stripe.model.PaymentIntent;
@@ -31,6 +31,7 @@ public class ExternoService {
     public void restaurarBanco() {
         cobrancas.clear();
         fila.clear();
+        seq.set(1);
     }
 
     public Email enviarEmail(NovoEmail req) {
@@ -66,7 +67,7 @@ public class ExternoService {
 
         try {
             long valorEmCentavos = req.valor(); // se já estiver em centavos
-            PaymentIntent pi = stripeGateway.criarPaymentIntent(
+            PaymentIntent pi = stripeGateway.criarIntencaoDePagamento(
                     valorEmCentavos,
                     "Cobranca ciclista " + req.ciclista()
             );
@@ -82,6 +83,7 @@ public class ExternoService {
             return c;
         } catch (StripeException e) {
             // Se a integração com Stripe falhar, você pode marcar como FALHA_GATEWAY
+            e.printStackTrace();
             Cobranca c = new Cobranca(
                     id,
                     req.ciclista(),
@@ -150,7 +152,7 @@ public class ExternoService {
                 .forEach(c -> {
                     try {
                         // cria o PaymentIntent na Stripe
-                        PaymentIntent pi = stripeGateway.criarPaymentIntent(
+                        PaymentIntent pi = stripeGateway.criarIntencaoDePagamento(
                                 c.valor(),                           // já em centavos
                                 "Cobranca ciclista " + c.ciclista()
                         );
@@ -183,5 +185,53 @@ public class ExternoService {
         return atualizadas;
     }
 
+    public Cobranca pagarCobranca(Long idCobranca) {
+        Cobranca atual = obterCobranca(idCobranca); // já lança NotFound se não existir
 
+        if (atual.gatewayID() == null) {
+            throw new IllegalStateException("Cobrança não possui gatewayID (PaymentIntent).");
+        }
+
+        try {
+            PaymentIntent pi = stripeGateway.confirmarPaymentIntentComCartaoTeste(atual.gatewayID());
+
+            String novoStatus;
+            switch (pi.getStatus()) {
+                case "succeeded" -> novoStatus = "PAGA";
+                case "requires_payment_method",
+                     "requires_action",
+                     "canceled" -> novoStatus = "FALHA";
+                default -> novoStatus = "AGUARDANDO_PAGAMENTO";
+            }
+
+            Cobranca atualizada = new Cobranca(
+                    atual.id(),
+                    atual.ciclista(),
+                    atual.valor(),
+                    novoStatus,
+                    atual.gatewayID()
+            );
+            cobrancas.put(atual.id(), atualizada);
+            return atualizada;
+
+        } catch (StripeException e) {
+            System.err.println("ERRO STRIPE AO CONFIRMAR PAGAMENTO:");
+            System.err.println("Mensagem: " + e.getMessage());
+            if (e.getStripeError() != null) {
+                System.err.println("Código:   " + e.getStripeError().getCode());
+                System.err.println("Tipo:     " + e.getStripeError().getType());
+                System.err.println("Detalhe:  " + e.getStripeError().getMessage());
+            }
+
+            Cobranca falha = new Cobranca(
+                    atual.id(),
+                    atual.ciclista(),
+                    atual.valor(),
+                    "FALHA_GATEWAY",
+                    atual.gatewayID()
+            );
+            cobrancas.put(atual.id(), falha);
+            return falha;
+        }
+    }
 }

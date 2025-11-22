@@ -1,6 +1,6 @@
 package com.scb.externo.exception;
 
-import com.scb.externo.model.Erro;
+import com.scb.externo.dto.Erro;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.HttpStatus;

@@ -11,14 +11,14 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/stripe")
-public class StripeWebhookController {
+public class StripeController {
 
-    @Value("${stripe.webhook.secret}")
+    @Value("pk_test_51SVxKB0FIcCirS146se3QGTKFZNH2LQmQlTQ4cRrCO3CAyRG0TNBEZOWYwuwB3kLOPhC8bJUadnr3FtA3V5427Z800WsQizr2B")
     private String webhookSecret;
 
     private final ExternoService service;
 
-    public StripeWebhookController(ExternoService service) {
+    public StripeController(ExternoService service) {
         this.service = service;
     }
 
@@ -32,8 +32,7 @@ public class StripeWebhookController {
         }
 
         if ("payment_intent.succeeded".equals(event.getType())) {
-            PaymentIntent pi = (PaymentIntent) event.getDataObjectDeserializer()
-                    .getObject().orElse(null);
+            PaymentIntent pi = (PaymentIntent) event.getDataObjectDeserializer().getObject().orElse(null);
             if (pi != null) {
                 // aqui você procura a Cobranca pelo gatewayId = pi.getId()
                 service.marcarComoPagoPorGatewayId(pi.getId());

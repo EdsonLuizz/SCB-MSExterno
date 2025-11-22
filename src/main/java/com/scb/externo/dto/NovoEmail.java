@@ -1,4 +1,4 @@
-package com.scb.externo.model;
+package com.scb.externo.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

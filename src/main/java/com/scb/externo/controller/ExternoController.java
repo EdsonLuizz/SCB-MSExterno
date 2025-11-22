@@ -1,6 +1,6 @@
 package com.scb.externo.controller;
 
-import com.scb.externo.model.*;
+import com.scb.externo.dto.*;
 import com.scb.externo.service.ExternoService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -12,7 +12,9 @@ import java.util.List;
 public class ExternoController {
 
   private final ExternoService service;
-  public ExternoController(ExternoService service) { this.service = service; }
+  public ExternoController(ExternoService service) {
+      this.service = service;
+  }
 
   @GetMapping("/restaurarBanco")
   public ResponseEntity<String> restaurarBanco() {
@@ -25,11 +27,6 @@ public class ExternoController {
     return ResponseEntity.ok(service.enviarEmail(body));
   }
 
-  @PostMapping("/cobranca")
-  public ResponseEntity<Cobranca> postCobranca(@Valid @RequestBody NovaCobranca body) {
-    return ResponseEntity.ok(service.criarCobranca(body));
-  }
-
   @PostMapping("/processaCobrancasEmFila")
   public ResponseEntity<List<Cobranca>> processaCobrancasEmFila() {
     return ResponseEntity.ok(service.processarFila());
@@ -40,9 +37,21 @@ public class ExternoController {
     return ResponseEntity.ok(service.incluirNaFila(body));
   }
 
+  //COBRANCA
+
+  @PostMapping("/cobranca")
+  public ResponseEntity<Cobranca> postCobranca(@Valid @RequestBody NovaCobranca body) {
+    return ResponseEntity.ok(service.criarCobranca(body));
+  }
+
   @GetMapping("/cobranca/{idCobranca}")
   public ResponseEntity<Cobranca> getCobranca(@PathVariable Long idCobranca) {
     return ResponseEntity.ok(service.obterCobranca(idCobranca));
+  }
+
+  @PostMapping("/cobranca/{idCobranca}/pagar")
+  public ResponseEntity<Cobranca> pagarCobranca(@PathVariable Long idCobranca) {
+    return ResponseEntity.ok(service.pagarCobranca(idCobranca));
   }
 
   @PostMapping("/validaCartaoDeCredito")
