@@ -163,6 +163,11 @@ public class ExternoService {
     }
 
     public boolean validaNumero(String n) {
+
+        if (n == null || n.isBlank()) {
+            return false;
+        }
+
         int s = 0;
         boolean alt = false;
         for (int i = n.length() - 1; i >= 0; i--) {

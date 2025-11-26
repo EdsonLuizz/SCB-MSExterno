@@ -14,6 +14,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import java.util.Map;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -281,5 +283,44 @@ class ExternoServiceTest {
             assertEquals("AGUARDANDO_PAGAMENTO", c.status());
             assertEquals("pi_test_123", c.gatewayID());
         });
+    }
+
+    @Test
+    void pagarCobranca_deveLancarIllegalStateQuandoNaoTemGatewayId() throws NoSuchFieldException, IllegalAccessException {
+        // arrange: cria cobrança manualmente, sem gatewayID
+        NovaCobranca req = new NovaCobranca("semGateway", 100L);
+        Cobranca c = service.criarCobranca(req);
+
+        // "anula" o gatewayID pra simular uma cobrança pendente sem PaymentIntent
+        Cobranca semGateway = new Cobranca(
+                c.id(),
+                c.status(),
+                c.horaSolicitacao(),
+                c.horaFinalizacao(),
+                c.valor(),
+                c.ciclista(),
+                null        // gatewayID nulo
+        );
+        // sobrescreve no "banco" em memória
+        var campoCobrancas = ExternoService.class
+                .getDeclaredField("cobrancas");
+        campoCobrancas.setAccessible(true);
+        @SuppressWarnings("unchecked")
+        Map<Long, Cobranca> mapa = (Map<Long, Cobranca>) campoCobrancas.get(service);
+        mapa.put(c.id(), semGateway);
+
+        // act + assert
+        assertThrows(IllegalStateException.class,
+                () -> service.pagarCobranca(c.id()));
+    }
+
+    @Test
+    void validaNumero_deveRetornarFalseQuandoStringVazia() {
+        assertFalse(service.validaNumero(""));
+    }
+
+    @Test
+    void validaNumero_deveRetornarFalseQuandoTemEspaco() {
+        assertFalse(service.validaNumero("7992 7398713"));
     }
 }
