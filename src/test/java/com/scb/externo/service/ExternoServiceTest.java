@@ -323,4 +323,38 @@ class ExternoServiceTest {
     void validaNumero_deveRetornarFalseQuandoTemEspaco() {
         assertFalse(service.validaNumero("7992 7398713"));
     }
+
+    @Test
+    void criarCobranca_quandoStripeLancaExcecao_deveMarcarFalhaGateway() throws StripeException {
+        // arrange: fazer o mock lançar StripeException
+        Mockito.reset(gatewayMock);
+
+        StripeException erroStripe = Mockito.mock(StripeException.class);
+
+        Mockito.when(gatewayMock.criarIntencaoDePagamento(anyLong(), anyString()))
+                .thenThrow(erroStripe);
+
+        NovaCobranca req = new NovaCobranca("ciclistaErro", 123L);
+
+        // act
+        Cobranca c = service.criarCobranca(req);
+
+        // assert
+        assertEquals("FALHA_GATEWAY", c.status());
+        assertNotNull(c.horaFinalizacao());
+        assertNull(c.gatewayID());
+    }
+
+    @Test
+    void marcarComoFalhaPorGatewayId_quandoExisteCobranca_deveAtualizarStatus() {
+        // arrange: cria cobrança com gatewayID preenchido
+        NovaCobranca req = new NovaCobranca("ciclistaFalha", 200L);
+        Cobranca criada = service.criarCobranca(req);
+
+        service.marcarComoFalhaPorGatewayId(criada.gatewayID());
+
+        Cobranca atualizada = service.obterCobranca(criada.id());
+        assertEquals("FALHA", atualizada.status());
+        assertNotNull(atualizada.horaFinalizacao());
+    }
 }
