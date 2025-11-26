@@ -23,8 +23,8 @@ public class ApiExceptionHandler {
         String method = request.getMethod();
 
         boolean ehPost = "POST".equalsIgnoreCase(method);
-        boolean ehCobrancaSimples   = "/cobranca".equals(path);
-        boolean ehFilaDeCobranca    = "/filaCobranca".equals(path);
+        boolean ehCobrancaSimples = "/cobranca".equals(path);
+        boolean ehFilaDeCobranca = "/filaCobranca".equals(path);
 
         //Regra específica para POST /cobranca e /filacobranca***
         if (ehPost && (ehCobrancaSimples || ehFilaDeCobranca)) {
@@ -43,7 +43,7 @@ public class ApiExceptionHandler {
     }
 
     private Erro toErro(FieldError fe) {
-        String msg = fe.getDefaultMessage() != null ? fe.getDefaultMessage(): "Dados inválidos";
+        String msg = fe.getDefaultMessage() != null ? fe.getDefaultMessage() : "Dados inválidos";
         //o codigo continua sendo o nome do campo para os outros endpoints
         return new Erro(fe.getField(), msg);
     }

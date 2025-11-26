@@ -26,20 +26,27 @@ class ExternoServiceTest {
     @BeforeEach
     void setUp() throws StripeException {
         gatewayMock = Mockito.mock(StripeGat.class);
-        mailgunGat = Mockito.mock(MailgunGat.class);
+        mailgunGat  = Mockito.mock(MailgunGat.class);
 
-        // 1) cria um PaymentIntent "fake"
-        PaymentIntent piFake = Mockito.mock(PaymentIntent.class);
-        Mockito.when(piFake.getId()).thenReturn("pi_test_123");
+        // 1) Mock da criação do PaymentIntent (usado em criarCobranca)
+        PaymentIntent piCriacao = Mockito.mock(PaymentIntent.class);
+        when(piCriacao.getId()).thenReturn("pi_test_123");
 
-        // 2) configura o mock pra devolver esse PaymentIntent
-        Mockito.when(gatewayMock.criarIntencaoDePagamento(
-                Mockito.anyLong(),
-                Mockito.anyString()
-        )).thenReturn(piFake);
+        when(gatewayMock.criarIntencaoDePagamento(
+                anyLong(),
+                anyString()
+        )).thenReturn(piCriacao);
 
-        // 3) injeta o mock no service
-        service = new ExternoService(gatewayMock,mailgunGat);
+        // 2) Mock da CONFIRMAÇÃO do PaymentIntent (usado em pagarCobranca)
+        PaymentIntent piConfirmado = Mockito.mock(PaymentIntent.class);
+        when(piConfirmado.getStatus()).thenReturn("succeeded"); // status de sucesso
+
+        when(gatewayMock.confirmarPaymentIntentComCartaoTeste(
+                anyString()               // vai receber o gatewayID, ex: "pi_test_123"
+        )).thenReturn(piConfirmado);
+
+        // 3) injeta os mocks no service
+        service = new ExternoService(gatewayMock, mailgunGat);
         service.restaurarBanco();
     }
 
@@ -167,4 +174,56 @@ class ExternoServiceTest {
         assertFalse(service.validaCartaoLuhn(cartao));
     }
 
+    @Test
+    void restaurarBanco() {
+        // arrange: cria duas cobranças
+        NovaCobranca req1 = new NovaCobranca("ciclista1", 100L);
+        NovaCobranca req2 = new NovaCobranca("ciclista2", 200L);
+
+        Cobranca c1 = service.criarCobranca(req1);
+        Cobranca c2 = service.criarCobranca(req2);
+
+        // sanity check
+        assertNotNull(service.obterCobranca(c1.id()));
+        assertNotNull(service.obterCobranca(c2.id()));
+
+        // act
+        service.restaurarBanco();
+
+        // assert: agora qualquer id deve lançar NotFoundException
+        assertThrows(NotFoundException.class,
+                () -> service.obterCobranca(c1.id()));
+        assertThrows(NotFoundException.class,
+                () -> service.obterCobranca(c2.id()));
+    }
+
+    @Test
+    void incluirNaFila() {
+        NovaCobranca req = new NovaCobranca("ciclistaFila", 500L);
+
+        Cobranca c = service.incluirNaFila(req);
+
+        assertNotNull(c.id());
+        assertEquals("ciclistaFila", c.ciclista());
+        // ajuste de acordo com o status que você definiu no método
+        // ex.: "EM_FILA" ou "FALHA_GATEWAY"
+        assertEquals("EM_FILA", c.status());
+    }
+
+    @Test
+    void pagarCobranca_alterandoHorariaFinalizacao() {
+        // arrange
+        NovaCobranca req = new NovaCobranca("ciclista", 150L);
+        Cobranca criada = service.criarCobranca(req);
+
+        // sanity check (opcional)
+        assertEquals("AGUARDANDO_PAGAMENTO", criada.status());
+
+        // act
+        Cobranca paga = service.pagarCobranca(criada.id());
+
+        // assert
+        assertEquals("PAGA", paga.status());
+        assertNotNull(paga.horaFinalizacao());
+    }
 }
