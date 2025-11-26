@@ -226,4 +226,60 @@ class ExternoServiceTest {
         assertEquals("PAGA", paga.status());
         assertNotNull(paga.horaFinalizacao());
     }
+
+    @Test
+    void processarFila_quandoNaoHaCobrancasEmFila_deveRetornarListaVazia() {
+        // não chamo incluirNaFila, então não existe nenhuma cobrança EM_FILA
+
+        var atualizadas = service.processarFila();
+
+        assertNotNull(atualizadas);
+        assertTrue(atualizadas.isEmpty());
+    }
+
+    @Test
+    void processarFila_quandoHaUmaCobrancaEmFila_deveAtualizarStatusEGateway() {
+        // arrange: cria uma cobrança EM_FILA
+        NovaCobranca req = new NovaCobranca("ciclistaFila", 500L);
+        Cobranca emFila = service.incluirNaFila(req);
+        assertEquals("EM_FILA", emFila.status());
+
+        // act
+        var atualizadas = service.processarFila();
+
+        // assert
+        assertEquals(1, atualizadas.size());
+        Cobranca processada = atualizadas.get(0);
+
+        assertEquals(emFila.id(), processada.id());
+        // status que o seu processarFila define (ajuste se for outro):
+        assertEquals("AGUARDANDO_PAGAMENTO", processada.status());
+        // gatewayId deve ter sido preenchido com o id do PaymentIntent mockado no setUp
+        assertEquals("pi_test_123", processada.gatewayID());
+        // e, conforme o ajuste que você fez, a horaFinalizacao deve continuar nula
+        assertNull(processada.horaFinalizacao());
+    }
+
+    @Test
+    void pagarCobranca_quandoIdNaoExiste_deveLancarNotFound() {
+        assertThrows(NotFoundException.class,
+                () -> service.pagarCobranca(9999L));
+    }
+
+    @Test
+    void processarFila_quandoHaMultiplasCobrancasEmFila_deveAtualizarTodas() {
+        NovaCobranca r1 = new NovaCobranca("c1", 100L);
+        NovaCobranca r2 = new NovaCobranca("c2", 200L);
+
+        service.incluirNaFila(r1);
+        service.incluirNaFila(r2);
+
+        var atualizadas = service.processarFila();
+
+        assertEquals(2, atualizadas.size());
+        atualizadas.forEach(c -> {
+            assertEquals("AGUARDANDO_PAGAMENTO", c.status());
+            assertEquals("pi_test_123", c.gatewayID());
+        });
+    }
 }

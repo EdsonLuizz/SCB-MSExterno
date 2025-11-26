@@ -217,6 +217,7 @@ public class ExternoService {
                 });
     }
 
+
     public List<Cobranca> processarFila() {
         List<Cobranca> atualizadas = new ArrayList<>();
 
@@ -232,14 +233,14 @@ public class ExternoService {
 
                         // marca como AGUARDANDO_PAGAMENTO e grava o gatewayID
                         Cobranca aguardando = new Cobranca(
-                                c.id(), "AGURADANDO PAGAMENTO", c.horaSolicitacao(), null, c.valor(), c.ciclista(), c.gatewayID()         // id do PaymentIntent
+                                c.id(), "AGUARDANDO_PAGAMENTO", c.horaSolicitacao(), null, c.valor(), c.ciclista(), pi.getId()         // id do PaymentIntent
                         );
                         cobrancas.put(c.id(), aguardando);
                         atualizadas.add(aguardando);
 
                     } catch (StripeException e) {
                         // se a chamada à Stripe falhar, marca como FALHA_GATEWAY
-                        Cobranca falhaGateway = new Cobranca(c.id(), "FALHA GATAWAY", c.horaSolicitacao(), Instant.now(), c.valor(), c.ciclista(), c.gatewayID()
+                        Cobranca falhaGateway = new Cobranca(c.id(), "FALHA_GATAWAY", c.horaSolicitacao(), Instant.now(), c.valor(), c.ciclista(), c.gatewayID()
                         );
                         cobrancas.put(c.id(), falhaGateway);
                         atualizadas.add(falhaGateway);
