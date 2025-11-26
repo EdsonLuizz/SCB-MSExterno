@@ -34,7 +34,7 @@ public class StripeController {
         if ("payment_intent.succeeded".equals(event.getType())) {
             PaymentIntent pi = (PaymentIntent) event.getDataObjectDeserializer().getObject().orElse(null);
             if (pi != null) {
-                // aqui você procura a Cobranca pelo gatewayId = pi.getId()
+                //procura a Cobranca pelo gatewayId = pi.getId()
                 service.marcarComoPagoPorGatewayId(pi.getId());
             }
         } else if ("payment_intent.payment_failed".equals(event.getType())) {

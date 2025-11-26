@@ -3,8 +3,11 @@ package com.scb.externo.controller;
 import com.scb.externo.dto.*;
 import com.scb.externo.service.ExternoService;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.scb.externo.dto.NovoCartaoDeCredito;
+import com.scb.externo.dto.Erro;
 
 import java.util.List;
 
@@ -55,9 +58,18 @@ public class ExternoController {
   }
 
   @PostMapping("/validaCartaoDeCredito")
-  public ResponseEntity<String> validaCartao(@Valid @RequestBody NovoCartaoDeCredito body) {
-    if (service.validaCartao(body)) return ResponseEntity.ok("Dados atualizados");
-    Erro erro = new Erro("numero", "Cartão inválido pelo algoritmo de Luhn");
-    return ResponseEntity.unprocessableEntity().body("422: " + erro.mensagem());
+  public ResponseEntity<?> validaCartaoDeCredito(@RequestBody @Valid NovoCartaoDeCredito req) {
+
+      boolean valido = service.validaCartaoLuhn(req);
+
+      if (!valido) {
+          Erro erro = new Erro("422", "Cartão inválido");
+          return ResponseEntity
+                  .status(HttpStatus.UNPROCESSABLE_ENTITY)
+                  .body(List.of(erro));
+      }
+
+      // se for válido, devolve o próprio JSON como no Swagger
+      return ResponseEntity.ok(req);
   }
 }

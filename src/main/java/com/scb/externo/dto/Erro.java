@@ -1,3 +1,3 @@
 package com.scb.externo.dto;
 
-public record Erro(String campo, String mensagem) {}
+public record Erro(String codigo, String mensagem) {}

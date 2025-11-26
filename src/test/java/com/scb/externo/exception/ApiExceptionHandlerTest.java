@@ -8,6 +8,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.mock.web.MockHttpServletRequest;
 
 import java.lang.reflect.Method;
 import java.util.List;
@@ -39,7 +41,12 @@ class ApiExceptionHandlerTest {
         MethodArgumentNotValidException ex =
                 new MethodArgumentNotValidException(methodParameter, bindingResult);
 
-        ResponseEntity<List<Erro>> resp = handler.onValidation(ex);
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        // se você quer testar o comportamento "normal" (lista de erros),
+        // use uma URL diferente de /cobranca
+        request.setRequestURI("/qualquer-coisa");
+
+        ResponseEntity<List<Erro>> resp = handler.onValidation(ex, request);
 
         assertEquals(HttpStatus.UNPROCESSABLE_ENTITY, resp.getStatusCode());
         assertNotNull(resp.getBody());

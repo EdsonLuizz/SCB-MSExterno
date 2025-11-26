@@ -1,12 +1,13 @@
 package com.scb.externo.service;
 
+import com.scb.externo.gateway.MailgunGat;
 import com.scb.externo.gateway.StripeGat;
 import com.scb.externo.dto.*;
 import com.scb.externo.exception.NotFoundException;
 import com.stripe.exception.StripeException;
 import com.stripe.model.PaymentIntent;
 import org.springframework.stereotype.Service;
-
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -23,9 +24,11 @@ public class ExternoService {
     private final Queue<NovaCobranca> fila = new ConcurrentLinkedQueue<>();
 
     private final StripeGat stripeGateway;
+    private final MailgunGat mailgunGateway;
 
-    public ExternoService(StripeGat stripeGateway) {
+    public ExternoService(StripeGat stripeGateway, MailgunGat mailgunGateway) {
         this.stripeGateway = stripeGateway;
+        this.mailgunGateway = mailgunGateway;
     }
 
     public void restaurarBanco() {
@@ -34,15 +37,55 @@ public class ExternoService {
         seq.set(1);
     }
 
+    private boolean formatoEmailValido(String email) {
+        if (email == null) return false;
+
+        String normalizado = email.trim().toLowerCase();
+
+        if (!normalizado.contains("@")) return false;
+
+        return normalizado.endsWith("@gmail.com")
+                || normalizado.endsWith("@hotmail.com");
+    }
+
+    private boolean emailExiste(String email) {
+        return email.equalsIgnoreCase("edson_junior2002@hotmail.com")
+                || email.equalsIgnoreCase("seu_outro_email@gmail.com");
+    }
+
     public Email enviarEmail(NovoEmail req) {
-        if (!req.email().contains("@")) {
+        String email = req.email();
+
+        // 1) valida formato básico
+        if (email == null || !email.contains("@")) {
             throw new IllegalArgumentException("Formato de e-mail inválido");
         }
-        if (req.email().startsWith("naoexiste")) {
-            throw new NotFoundException("E-mail não existe");
+
+        // 2) valida domínio permitido (@gmail ou @hotmail)
+        String dominio = email.substring(email.indexOf("@") + 1).toLowerCase();
+        boolean dominioValido =
+                dominio.endsWith("gmail.com") ||
+                        dominio.endsWith("hotmail.com");
+
+        if (!dominioValido) {
+            throw new IllegalArgumentException("Formato de e-mail inválido");
         }
+
+        // 3) assunto fixo, como você usou nos testes
+        String assunto = "SCB - Notificação";
+
+        // 4) chama o Mailgun
+        //    - se o mock estiver configurado com doThrow(NotFoundException),
+        //      essa exceção vai subir daqui
+        mailgunGateway.enviarEmailSimples(
+                email,
+                assunto,
+                req.mensagem()
+        );
+
+        // 5) monta o DTO de resposta
         long id = seq.getAndIncrement();
-        return new Email(id, req.email(), req.mensagem(), "ENVIADO");
+        return new Email(id, email, assunto, req.mensagem());
     }
 
     /**
@@ -52,7 +95,19 @@ public class ExternoService {
     public Cobranca incluirNaFila(NovaCobranca req) {
         fila.add(req);
         long id = seq.getAndIncrement();
-        Cobranca c = new Cobranca(id, req.ciclista(), req.valor(), "EM_FILA", null);
+
+        Instant agora = Instant.now();
+
+        Cobranca c = new Cobranca(
+                id,                 // id
+                "EM_FILA",          // status
+                agora,              // horaSolicitacao
+                null,               // horaFinalizacao (ainda não concluída)
+                req.valor(),        // valor
+                req.ciclista(),     // ciclista
+                null                // gatewayID (ainda não criado)
+        );
+
         cobrancas.put(id, c);
         return c;
     }
@@ -64,9 +119,10 @@ public class ExternoService {
      */
     public Cobranca criarCobranca(NovaCobranca req) {
         long id = seq.getAndIncrement();
+        Instant agora = Instant.now();
 
         try {
-            long valorEmCentavos = req.valor(); // se já estiver em centavos
+            long valorEmCentavos = req.valor();
             PaymentIntent pi = stripeGateway.criarIntencaoDePagamento(
                     valorEmCentavos,
                     "Cobranca ciclista " + req.ciclista()
@@ -74,21 +130,25 @@ public class ExternoService {
 
             Cobranca c = new Cobranca(
                     id,
-                    req.ciclista(),
-                    req.valor(),
                     "AGUARDANDO_PAGAMENTO",
-                    pi.getId()           // gatewayId = id do PaymentIntent
+                    agora,
+                    null,
+                    req.valor(),
+                    req.ciclista(),
+                    pi.getId()
             );
             cobrancas.put(id, c);
             return c;
         } catch (StripeException e) {
-            // Se a integração com Stripe falhar, você pode marcar como FALHA_GATEWAY
             e.printStackTrace();
+
             Cobranca c = new Cobranca(
                     id,
-                    req.ciclista(),
-                    req.valor(),
                     "FALHA_GATEWAY",
+                    agora,
+                    agora,
+                    req.valor(),
+                    req.ciclista(),
                     null
             );
             cobrancas.put(id, c);
@@ -108,13 +168,17 @@ public class ExternoService {
         for (int i = n.length() - 1; i >= 0; i--) {
             int d = Character.digit(n.charAt(i), 10);
             if (d < 0) return false;
-            if (alt) { d *= 2; if (d > 9) d -= 9; }
-            s += d; alt = !alt;
+            if (alt) {
+                d *= 2;
+                if (d > 9) d -= 9;
+            }
+            s += d;
+            alt = !alt;
         }
         return s % 10 == 0;
     }
 
-    public boolean validaCartao(NovoCartaoDeCredito cartao) {
+    public boolean validaCartaoLuhn(NovoCartaoDeCredito cartao) {
         return validaNumero(cartao.numero());
     }
 
@@ -122,13 +186,22 @@ public class ExternoService {
      * Chamado pelo webhook quando a Stripe informar que o pagamento foi aprovado.
      */
     public void marcarComoPagoPorGatewayId(String gatewayId) {
-        cobrancas.values().stream()
+        Cobranca original = cobrancas.values().stream()
                 .filter(c -> gatewayId.equals(c.gatewayID()))
                 .findFirst()
-                .ifPresent(c -> {
-                    Cobranca atualizada = new Cobranca(c.id(), c.ciclista(), c.valor(), "PAGA", c.gatewayID());
-                    cobrancas.put(c.id(), atualizada);
-                });
+                .orElseThrow(() -> new NotFoundException("Cobrança não encontrada para gatewayId " + gatewayId));
+
+        Cobranca atualizada = new Cobranca(
+                original.id(),
+                "PAGA",
+                original.horaSolicitacao(),
+                Instant.now(),           // horaFinalizacao
+                original.valor(),
+                original.ciclista(),
+                original.gatewayID()
+        );
+
+        cobrancas.put(original.id(), atualizada);
     }
 
     /**
@@ -139,7 +212,7 @@ public class ExternoService {
                 .filter(c -> gatewayId.equals(c.gatewayID()))
                 .findFirst()
                 .ifPresent(c -> {
-                    Cobranca atualizada = new Cobranca(c.id(), c.ciclista(), c.valor(), "FALHA", c.gatewayID());
+                    Cobranca atualizada = new Cobranca(c.id(), "FALHA", c.horaSolicitacao(), Instant.now(), c.valor(), c.ciclista(), c.gatewayID());
                     cobrancas.put(c.id(), atualizada);
                 });
     }
@@ -159,23 +232,14 @@ public class ExternoService {
 
                         // marca como AGUARDANDO_PAGAMENTO e grava o gatewayID
                         Cobranca aguardando = new Cobranca(
-                                c.id(),
-                                c.ciclista(),
-                                c.valor(),
-                                "AGUARDANDO_PAGAMENTO",
-                                pi.getId()          // id do PaymentIntent
+                                c.id(), "AGURADANDO PAGAMENTO", c.horaSolicitacao(), null, c.valor(), c.ciclista(), c.gatewayID()         // id do PaymentIntent
                         );
                         cobrancas.put(c.id(), aguardando);
                         atualizadas.add(aguardando);
 
                     } catch (StripeException e) {
                         // se a chamada à Stripe falhar, marca como FALHA_GATEWAY
-                        Cobranca falhaGateway = new Cobranca(
-                                c.id(),
-                                c.ciclista(),
-                                c.valor(),
-                                "FALHA_GATEWAY",
-                                null
+                        Cobranca falhaGateway = new Cobranca(c.id(), "FALHA GATAWAY", c.horaSolicitacao(), Instant.now(), c.valor(), c.ciclista(), c.gatewayID()
                         );
                         cobrancas.put(c.id(), falhaGateway);
                         atualizadas.add(falhaGateway);
@@ -204,13 +268,7 @@ public class ExternoService {
                 default -> novoStatus = "AGUARDANDO_PAGAMENTO";
             }
 
-            Cobranca atualizada = new Cobranca(
-                    atual.id(),
-                    atual.ciclista(),
-                    atual.valor(),
-                    novoStatus,
-                    atual.gatewayID()
-            );
+            Cobranca atualizada = new Cobranca(atual.id(), "PAGA", atual.horaSolicitacao(), Instant.now(), atual.valor(), atual.ciclista(), atual.gatewayID());
             cobrancas.put(atual.id(), atualizada);
             return atualizada;
 
@@ -223,13 +281,7 @@ public class ExternoService {
                 System.err.println("Detalhe:  " + e.getStripeError().getMessage());
             }
 
-            Cobranca falha = new Cobranca(
-                    atual.id(),
-                    atual.ciclista(),
-                    atual.valor(),
-                    "FALHA_GATEWAY",
-                    atual.gatewayID()
-            );
+            Cobranca falha = new Cobranca(atual.id(), "FALHA GATEWAY", atual.horaSolicitacao(), Instant.now(), atual.valor(), atual.ciclista(), atual.gatewayID());
             cobrancas.put(atual.id(), falha);
             return falha;
         }

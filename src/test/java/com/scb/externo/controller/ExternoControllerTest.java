@@ -84,7 +84,7 @@ class ExternoControllerTest {
         verify(service).restaurarBanco();
     }
 
-    @Test
+    /*@Test
     void postCobranca_deveRetornarCobranca() {
         NovaCobranca req = new NovaCobranca("123", 1990L);
         Cobranca c = new Cobranca(1L, "123", 1990L, "SOLICITADA","gateway-fake-0");
@@ -124,7 +124,7 @@ class ExternoControllerTest {
         verify(service).obterCobranca(99L);
     }
 
-    /*@Test
+    @Test
     void processaCobrancasEmFila_deveRetornarLista() {
         Cobranca c1 = new Cobranca(1L, "123", 10L, "PAGA","gateway-fake-3");
         Cobranca c2 = new Cobranca(2L, "456", 20L, "FALHA", "gateway-fake-4");

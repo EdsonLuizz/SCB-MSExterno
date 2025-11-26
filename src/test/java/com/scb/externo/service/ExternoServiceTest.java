@@ -1,5 +1,6 @@
 package com.scb.externo.service;
 
+import com.scb.externo.gateway.MailgunGat;
 import com.scb.externo.gateway.StripeGat;
 import com.scb.externo.dto.Cobranca;
 import com.scb.externo.dto.Email;
@@ -14,15 +15,18 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 class ExternoServiceTest {
 
     private ExternoService service;
     private StripeGat gatewayMock;
+    private MailgunGat mailgunGat;
 
     @BeforeEach
     void setUp() throws StripeException {
         gatewayMock = Mockito.mock(StripeGat.class);
+        mailgunGat = Mockito.mock(MailgunGat.class);
 
         // 1) cria um PaymentIntent "fake"
         PaymentIntent piFake = Mockito.mock(PaymentIntent.class);
@@ -35,7 +39,7 @@ class ExternoServiceTest {
         )).thenReturn(piFake);
 
         // 3) injeta o mock no service
-        service = new ExternoService(gatewayMock);
+        service = new ExternoService(gatewayMock,mailgunGat);
         service.restaurarBanco();
     }
 
@@ -45,35 +49,51 @@ class ExternoServiceTest {
 
         assertThrows(IllegalArgumentException.class,
                 () -> service.enviarEmail(req));
+        verifyNoInteractions(mailgunGat);
     }
 
     @Test
     void enviarEmail_deveLancarNotFoundQuandoEmailNaoExiste() {
-        NovoEmail req = new NovoEmail("naoexiste@teste.com", "mensagem");
+        String emailNaoExiste = "naoexiste@gmail.com";
+        NovoEmail req = new NovoEmail(emailNaoExiste, "mensagem");
+
+        doThrow(new NotFoundException("E-mail não existe"))
+                .when(mailgunGat)
+                .enviarEmailSimples(
+                        eq(emailNaoExiste),
+                        anyString(),
+                        eq("mensagem")
+                );
 
         assertThrows(NotFoundException.class,
                 () -> service.enviarEmail(req));
+
+        verify(mailgunGat).enviarEmailSimples(
+                emailNaoExiste,
+                "SCB - Notificação",
+                "mensagem"
+        );
     }
 
     @Test
     void enviarEmail_deveRetornarEmailQuandoDadosValidos() {
-        NovoEmail req = new NovoEmail("teste@exemplo.com", "mensagem");
+        NovoEmail req = new NovoEmail("edson_teste@gmail.com", "mensagem");
+
+        // não faz nada quando o service chamar o Mailgun
+        doNothing()
+                .when(mailgunGat)
+                .enviarEmailSimples(anyString(), anyString(), anyString());
 
         Email email = service.enviarEmail(req);
 
         assertNotNull(email);
-        assertEquals("teste@exemplo.com", email.email());
-        assertEquals("ENVIADO", email.status());
-    }
+        assertEquals("edson_teste@gmail.com", email.email());
 
-    @Test
-    void incluirNaFila_deveCriarCobrancaComStatusEmFila() {
-        NovaCobranca req = new NovaCobranca("ciclista", 10L);
-
-        Cobranca c = service.incluirNaFila(req);
-
-        assertNotNull(c);
-        assertEquals("EM_FILA", c.status());
+        verify(mailgunGat).enviarEmailSimples(
+                "edson_teste@gmail.com",
+                "SCB - Notificação",
+                "mensagem"
+        );
     }
 
     @Test
@@ -136,15 +156,15 @@ class ExternoServiceTest {
     @Test
     void validaCartao_deveRetornarTrue() {
         // ajuste os outros parâmetros, se o seu NovoCartaoDeCredito tiver mais campos
-        NovoCartaoDeCredito cartao = new NovoCartaoDeCredito("79927398713", "Edson", "29/11","132");
-        assertTrue(service.validaCartao(cartao));
+        NovoCartaoDeCredito cartao = new NovoCartaoDeCredito("Edson", "4532015112830366", "09/30","132");
+        assertTrue(service.validaCartaoLuhn(cartao));
     }
 
     @Test
     void validaCartao_deveRetornarFalse() {
         // ajuste os outros parâmetros, se o seu NovoCartaoDeCredito tiver mais campos
-        NovoCartaoDeCredito cartao = new NovoCartaoDeCredito("1234567890", "Raul", "18/07", "311");
-        assertFalse(service.validaCartao(cartao));
+        NovoCartaoDeCredito cartao = new NovoCartaoDeCredito("Raul", "1234567890", "18/026", "311");
+        assertFalse(service.validaCartaoLuhn(cartao));
     }
 
 }

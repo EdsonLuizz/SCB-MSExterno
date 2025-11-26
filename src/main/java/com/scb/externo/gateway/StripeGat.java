@@ -24,7 +24,7 @@ public class StripeGat {
     }
 
     public PaymentIntent confirmarPaymentIntentComCartaoTeste(String paymentIntentId) throws StripeException {
-        // Aqui usamos um PaymentMethod de teste já pronto da Stripe
+        //Usei o PaymentMethod de teste já pronto da Stripe
         PaymentIntentConfirmParams confirmParams = PaymentIntentConfirmParams.builder()
                 .setPaymentMethod("pm_card_visa")   // sempre o mesmo “cartão de teste”
                 .build();
