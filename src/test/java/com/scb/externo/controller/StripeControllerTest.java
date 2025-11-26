@@ -1,53 +1,118 @@
 package com.scb.externo.controller;
 
 import com.scb.externo.service.ExternoService;
-import com.stripe.exception.SignatureVerificationException;
 import com.stripe.model.Event;
+import com.stripe.model.EventDataObjectDeserializer;
 import com.stripe.model.PaymentIntent;
 import com.stripe.net.Webhook;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
 
-@RestController
-@RequestMapping("/stripe")
-class StripeController {
+import java.util.Optional;
 
-    @Value("${stripe.webhook.secret}")
-    private String webhookSecret;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-    private final ExternoService service;
+@WebMvcTest(controllers = StripeController.class)
+class StripeControllerTest {
 
-    public StripeController(ExternoService service) {
-        this.service = service;
+    @Autowired
+    MockMvc mvc;
+
+    @MockBean
+    ExternoService service;
+
+    @Test
+    void webhook_quandoAssinaturaInvalida_deveRetornarBadRequest() throws Exception {
+        // não mocka Webhook -> vai lançar SignatureVerificationException
+        mvc.perform(post("/stripe/webhook")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}")
+                        .header("Stripe-Signature", "assinatura_errada"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("Assinatura inválida"));
+
+        verifyNoInteractions(service);
     }
 
-    @PostMapping("/webhook")
-    public ResponseEntity<String> handleWebhook(@RequestBody String payload,
-                                                @RequestHeader("Stripe-Signature") String sigHeader) {
-        Event event;
-        try {
-            event = Webhook.constructEvent(payload, sigHeader, webhookSecret);
-        } catch (SignatureVerificationException e) {
-            return ResponseEntity.badRequest().body("Assinatura inválida");
+    @Test
+    void webhook_quandoPaymentSucceeded_deveChamarMarcarComoPago() throws Exception {
+        String payload = """
+                {
+                  "type": "payment_intent.succeeded",
+                  "data": { "object": { "id": "pi_test_123" } }
+                }
+                """;
+
+        // monta Event "fake"
+        Event eventMock = mock(Event.class);
+        when(eventMock.getType()).thenReturn("payment_intent.succeeded");
+
+        PaymentIntent pi = mock(PaymentIntent.class);
+        when(pi.getId()).thenReturn("pi_test_123");
+
+        EventDataObjectDeserializer deser = mock(EventDataObjectDeserializer.class);
+        when(deser.getObject()).thenReturn(Optional.of(pi));
+        when(eventMock.getDataObjectDeserializer()).thenReturn(deser);
+
+        try (MockedStatic<Webhook> webhook = Mockito.mockStatic(Webhook.class)) {
+            webhook.when(() ->
+                            Webhook.constructEvent(anyString(), anyString(), anyString()))
+                    .thenReturn(eventMock);
+
+            mvc.perform(post("/stripe/webhook")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(payload)
+                            .header("Stripe-Signature", "qualquer"))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string("ok"));
         }
 
-        if ("payment_intent.succeeded".equals(event.getType())) {
-            PaymentIntent pi = (PaymentIntent) event.getDataObjectDeserializer()
-                    .getObject()
-                    .orElse(null);
-            if (pi != null) {
-                service.marcarComoPagoPorGatewayId(pi.getId());
-            }
-        } else if ("payment_intent.payment_failed".equals(event.getType())) {
-            PaymentIntent pi = (PaymentIntent) event.getDataObjectDeserializer()
-                    .getObject()
-                    .orElse(null);
-            if (pi != null) {
-                service.marcarComoFalhaPorGatewayId(pi.getId());
-            }
+        verify(service).marcarComoPagoPorGatewayId("pi_test_123");
+        verify(service, never()).marcarComoFalhaPorGatewayId(anyString());
+    }
+
+    @Test
+    void webhook_quandoPaymentFailed_deveChamarMarcarComoFalha() throws Exception {
+        String payload = """
+                {
+                  "type": "payment_intent.payment_failed",
+                  "data": { "object": { "id": "pi_fail_999" } }
+                }
+                """;
+
+        Event eventMock = mock(Event.class);
+        when(eventMock.getType()).thenReturn("payment_intent.payment_failed");
+
+        PaymentIntent pi = mock(PaymentIntent.class);
+        when(pi.getId()).thenReturn("pi_fail_999");
+
+        EventDataObjectDeserializer deser = mock(EventDataObjectDeserializer.class);
+        when(deser.getObject()).thenReturn(Optional.of(pi));
+        when(eventMock.getDataObjectDeserializer()).thenReturn(deser);
+
+        try (MockedStatic<Webhook> webhook = Mockito.mockStatic(Webhook.class)) {
+            webhook.when(() ->
+                            Webhook.constructEvent(anyString(), anyString(), anyString()))
+                    .thenReturn(eventMock);
+
+            mvc.perform(post("/stripe/webhook")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(payload)
+                            .header("Stripe-Signature", "qualquer"))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string("ok"));
         }
 
-        return ResponseEntity.ok("ok");
+        verify(service).marcarComoFalhaPorGatewayId("pi_fail_999");
+        verify(service, never()).marcarComoPagoPorGatewayId(anyString());
     }
 }

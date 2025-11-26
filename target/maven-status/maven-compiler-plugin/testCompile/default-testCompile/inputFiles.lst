@@ -2,4 +2,5 @@ C:\Users\USER\Documents\SCB-MSExterno\src\test\java\com\scb\externo\controller\E
 C:\Users\USER\Documents\SCB-MSExterno\src\test\java\com\scb\externo\controller\StripeControllerTest.java
 C:\Users\USER\Documents\SCB-MSExterno\src\test\java\com\scb\externo\exception\ApiExceptionHandlerTest.java
 C:\Users\USER\Documents\SCB-MSExterno\src\test\java\com\scb\externo\exception\NotFoundExceptionTest.java
+C:\Users\USER\Documents\SCB-MSExterno\src\test\java\com\scb\externo\gateway\StripeGatTest.java
 C:\Users\USER\Documents\SCB-MSExterno\src\test\java\com\scb\externo\service\ExternoServiceTest.java

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report-3.0.xsd" version="3.0" name="com.scb.externo.controller.ExternoControllerTest" time="1.193" tests="2" errors="0" skipped="0" failures="0">
+<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report-3.0.xsd" version="3.0" name="com.scb.externo.controller.StripeControllerTest" time="3.278" tests="3" errors="0" skipped="0" failures="0">
   <properties>
     <property name="java.specification.version" value="23"/>
     <property name="sun.cpu.isalist" value="amd64"/>
@@ -10,6 +10,7 @@
     <property name="user.variant" value=""/>
     <property name="java.vendor.url" value="https://java.oracle.com/"/>
     <property name="user.timezone" value="America/Sao_Paulo"/>
+    <property name="org.jboss.logging.provider" value="slf4j"/>
     <property name="os.name" value="Windows 11"/>
     <property name="java.vm.specification.version" value="23"/>
     <property name="sun.java.launcher" value="SUN_STANDARD"/>
@@ -30,6 +31,8 @@
     <property name="line.separator" value="&#10;"/>
     <property name="java.vm.specification.vendor" value="Oracle Corporation"/>
     <property name="java.specification.name" value="Java Platform API Specification"/>
+    <property name="FILE_LOG_CHARSET" value="UTF-8"/>
+    <property name="java.awt.headless" value="true"/>
     <property name="surefire.real.class.path" value="C:\Users\USER\AppData\Local\Temp\surefire6970222319810068004\surefirebooter-20251126205742584_3.jar"/>
     <property name="user.script" value=""/>
     <property name="sun.management.compiler" value="HotSpot 64-Bit Tiered Compilers"/>
@@ -48,7 +51,9 @@
     <property name="user.dir" value="C:\Users\USER\Documents\SCB-MSExterno"/>
     <property name="os.arch" value="amd64"/>
     <property name="java.vm.specification.name" value="Java Virtual Machine Specification"/>
+    <property name="PID" value="29352"/>
     <property name="sun.os.patch.level" value=""/>
+    <property name="CONSOLE_LOG_CHARSET" value="UTF-8"/>
     <property name="native.encoding" value="Cp1252"/>
     <property name="java.library.path" value="C:\Program Files\Java\jdk-23\bin;C:\WINDOWS\Sun\Java\bin;C:\WINDOWS\system32;C:\WINDOWS;C:\Program Files\Common Files\Oracle\Java\javapath;C:\Program Files (x86)\Common Files\Oracle\Java\java8path;C:\Program Files (x86)\Common Files\Oracle\Java\javapath;C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0\;C:\WINDOWS\System32\OpenSSH\;C:\Program Files\dotnet\;C:\Program Files\nodejs\;C:\Program Files\k6\;C:\Program Files\Git\cmd;C:\apache-maven-3.9.11\bin;C:\Users\USER\AppData\Local\Programs\Python\Python314\Scripts\;C:\Users\USER\AppData\Local\Programs\Python\Python314\;C:\Users\USER\AppData\Local\Programs\Python\Launcher\;C:\Users\USER\AppData\Local\Microsoft\WindowsApps;C:\Users\USER\AppData\Local\Programs\Microsoft VS Code\bin;C:\Users\USER\AppData\Roaming\npm;C:\Program Files\JetBrains\IntelliJ IDEA Community Edition 2025.2.3\bin;."/>
     <property name="java.vm.info" value="mixed mode, sharing"/>
@@ -58,12 +63,27 @@
     <property name="sun.io.unicode.encoding" value="UnicodeLittle"/>
     <property name="java.class.version" value="67.0"/>
   </properties>
-  <testcase name="restaurarBanco_deveRetornar200" classname="com.scb.externo.controller.ExternoControllerTest" time="1.14">
-    <system-err><![CDATA[WARNING: A Java agent has been loaded dynamically (C:\Users\USER\.m2\repository\net\bytebuddy\byte-buddy-agent\1.14.19\byte-buddy-agent-1.14.19.jar)
-WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning
-WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information
-WARNING: Dynamic loading of agents will be disallowed by default in a future release
-]]></system-err>
+  <testcase name="webhook_quandoPaymentSucceeded_deveChamarMarcarComoPago" classname="com.scb.externo.controller.StripeControllerTest" time="0.443">
+    <system-out><![CDATA[20:57:44.941 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.scb.externo.controller.StripeControllerTest]: StripeControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+20:57:45.206 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.scb.externo.ExternoApplication for test class com.scb.externo.controller.StripeControllerTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.3.4)
+
+2025-11-26T20:57:45.839-03:00  INFO 29352 --- [           main] c.s.e.controller.StripeControllerTest    : Starting StripeControllerTest using Java 23.0.2 with PID 29352 (started by USER in C:\Users\USER\Documents\SCB-MSExterno)
+2025-11-26T20:57:45.840-03:00  INFO 29352 --- [           main] c.s.e.controller.StripeControllerTest    : No active profile set, falling back to 1 default profile: "default"
+2025-11-26T20:57:47.466-03:00  INFO 29352 --- [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2025-11-26T20:57:47.466-03:00  INFO 29352 --- [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2025-11-26T20:57:47.468-03:00  INFO 29352 --- [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 2 ms
+2025-11-26T20:57:47.491-03:00  INFO 29352 --- [           main] c.s.e.controller.StripeControllerTest    : Started StripeControllerTest in 2.177 seconds (process running for 4.808)
+]]></system-out>
   </testcase>
-  <testcase name="enviarEmail_devePropagarNotFound" classname="com.scb.externo.controller.ExternoControllerTest" time="0.012"/>
+  <testcase name="webhook_quandoAssinaturaInvalida_deveRetornarBadRequest" classname="com.scb.externo.controller.StripeControllerTest" time="0.011"/>
+  <testcase name="webhook_quandoPaymentFailed_deveChamarMarcarComoFalha" classname="com.scb.externo.controller.StripeControllerTest" time="0.006"/>
 </testsuite>

@@ -62,4 +62,63 @@ class ApiExceptionHandlerTest {
         assertEquals(HttpStatus.NOT_FOUND, resp.getStatusCode());
         assertNotNull(resp.getBody());
     }
+
+    @Test
+    void onValidation_quandoPostEmCobranca_deveRetornarMensagemGenerica() throws Exception {
+        Object target = new Object();
+        BeanPropertyBindingResult binding =
+                new BeanPropertyBindingResult(target, "target");
+        binding.addError(new FieldError("target", "valor", "mensagem"));
+
+        Method m = this.getClass().getDeclaredMethod("dummy", String.class);
+        MethodParameter mp = new MethodParameter(m, 0);
+        MethodArgumentNotValidException ex =
+                new MethodArgumentNotValidException(mp, binding);
+
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setMethod("POST");
+        request.setRequestURI("/cobranca");
+
+        ResponseEntity<List<Erro>> resp = handler.onValidation(ex, request);
+
+        assertEquals(HttpStatus.UNPROCESSABLE_ENTITY, resp.getStatusCode());
+        assertEquals(1, resp.getBody().size());
+        assertEquals("422", resp.getBody().get(0).codigo());
+        assertEquals("Dados Inválidos", resp.getBody().get(0).mensagem());
+    }
+
+    @Test
+    void onValidation_quandoPostEmFilaCobranca_deveRetornarMensagemGenerica() throws Exception {
+        // igual ao anterior, só troca a URI
+        Object target = new Object();
+        BeanPropertyBindingResult binding =
+                new BeanPropertyBindingResult(target, "target");
+        binding.addError(new FieldError("target", "valor", "mensagem"));
+
+        Method m = this.getClass().getDeclaredMethod("dummy", String.class);
+        MethodParameter mp = new MethodParameter(m, 0);
+        MethodArgumentNotValidException ex =
+                new MethodArgumentNotValidException(mp, binding);
+
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setMethod("POST");
+        request.setRequestURI("/filaCobranca");
+
+        ResponseEntity<List<Erro>> resp = handler.onValidation(ex, request);
+
+        assertEquals(HttpStatus.UNPROCESSABLE_ENTITY, resp.getStatusCode());
+        assertEquals("Dados Inválidos", resp.getBody().get(0).mensagem());
+    }
+
+    @Test
+    void onIllegalArgument_deveRetornar422ComMensagem() {
+        IllegalArgumentException ex = new IllegalArgumentException("erro de negócio");
+
+        ResponseEntity<List<Erro>> resp = handler.onIllegalArgument(ex);
+
+        assertEquals(HttpStatus.UNPROCESSABLE_ENTITY, resp.getStatusCode());
+        assertEquals(1, resp.getBody().size());
+        assertEquals("422", resp.getBody().get(0).codigo());
+        assertEquals("erro de negócio", resp.getBody().get(0).mensagem());
+    }
 }
