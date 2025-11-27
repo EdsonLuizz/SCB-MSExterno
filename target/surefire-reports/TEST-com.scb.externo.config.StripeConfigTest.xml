@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report-3.0.xsd" version="3.0" name="com.scb.externo.service.ExternoServiceTest" time="0.274" tests="28" errors="0" skipped="0" failures="0">
+<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report-3.0.xsd" version="3.0" name="com.scb.externo.config.StripeConfigTest" time="0.052" tests="2" errors="0" skipped="0" failures="0">
   <properties>
     <property name="java.specification.version" value="23"/>
     <property name="sun.cpu.isalist" value="amd64"/>
@@ -10,7 +10,6 @@
     <property name="user.variant" value=""/>
     <property name="java.vendor.url" value="https://java.oracle.com/"/>
     <property name="user.timezone" value="America/Sao_Paulo"/>
-    <property name="org.jboss.logging.provider" value="slf4j"/>
     <property name="os.name" value="Windows 11"/>
     <property name="java.vm.specification.version" value="23"/>
     <property name="sun.java.launcher" value="SUN_STANDARD"/>
@@ -31,8 +30,6 @@
     <property name="line.separator" value="&#10;"/>
     <property name="java.vm.specification.vendor" value="Oracle Corporation"/>
     <property name="java.specification.name" value="Java Platform API Specification"/>
-    <property name="FILE_LOG_CHARSET" value="UTF-8"/>
-    <property name="java.awt.headless" value="true"/>
     <property name="surefire.real.class.path" value="C:\Users\USER\AppData\Local\Temp\surefire17364331940140225596\surefirebooter-20251126211127482_3.jar"/>
     <property name="user.script" value=""/>
     <property name="sun.management.compiler" value="HotSpot 64-Bit Tiered Compilers"/>
@@ -51,9 +48,7 @@
     <property name="user.dir" value="C:\Users\USER\Documents\SCB-MSExterno"/>
     <property name="os.arch" value="amd64"/>
     <property name="java.vm.specification.name" value="Java Virtual Machine Specification"/>
-    <property name="PID" value="27356"/>
     <property name="sun.os.patch.level" value=""/>
-    <property name="CONSOLE_LOG_CHARSET" value="UTF-8"/>
     <property name="native.encoding" value="Cp1252"/>
     <property name="java.library.path" value="C:\Program Files\Java\jdk-23\bin;C:\WINDOWS\Sun\Java\bin;C:\WINDOWS\system32;C:\WINDOWS;C:\Program Files\Common Files\Oracle\Java\javapath;C:\Program Files (x86)\Common Files\Oracle\Java\java8path;C:\Program Files (x86)\Common Files\Oracle\Java\javapath;C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0\;C:\WINDOWS\System32\OpenSSH\;C:\Program Files\dotnet\;C:\Program Files\nodejs\;C:\Program Files\k6\;C:\Program Files\Git\cmd;C:\apache-maven-3.9.11\bin;C:\Users\USER\AppData\Local\Programs\Python\Python314\Scripts\;C:\Users\USER\AppData\Local\Programs\Python\Python314\;C:\Users\USER\AppData\Local\Programs\Python\Launcher\;C:\Users\USER\AppData\Local\Microsoft\WindowsApps;C:\Users\USER\AppData\Local\Programs\Microsoft VS Code\bin;C:\Users\USER\AppData\Roaming\npm;C:\Program Files\JetBrains\IntelliJ IDEA Community Edition 2025.2.3\bin;."/>
     <property name="java.vm.info" value="mixed mode, sharing"/>
@@ -63,36 +58,6 @@
     <property name="sun.io.unicode.encoding" value="UnicodeLittle"/>
     <property name="java.class.version" value="67.0"/>
   </properties>
-  <testcase name="enviarEmail_deveLancarIllegalArgumentQuandoDominioNaoPermitido" classname="com.scb.externo.service.ExternoServiceTest" time="0.066"/>
-  <testcase name="enviarEmail_deveRetornarEmailQuandoDadosValidos" classname="com.scb.externo.service.ExternoServiceTest" time="0.008"/>
-  <testcase name="criarCobranca_quandoStripeLancaExcecao_deveMarcarFalhaGateway" classname="com.scb.externo.service.ExternoServiceTest" time="0.133"/>
-  <testcase name="validaNumero_deveRetornarFalseQuandoStringVazia" classname="com.scb.externo.service.ExternoServiceTest" time="0.003"/>
-  <testcase name="processarFila_quandoHaUmaCobrancaEmFila_deveAtualizarStatusEGateway" classname="com.scb.externo.service.ExternoServiceTest" time="0.003"/>
-  <testcase name="marcarComoFalhaPorGatewayId_quandoExisteCobranca_deveAtualizarStatus" classname="com.scb.externo.service.ExternoServiceTest" time="0.003"/>
-  <testcase name="validaNumero_deveRetornarFalseParaCaracterInvalido" classname="com.scb.externo.service.ExternoServiceTest" time="0.002"/>
-  <testcase name="pagarCobranca_quandoStripeLancaExcecao_deveMarcarComoFalhaGateway" classname="com.scb.externo.service.ExternoServiceTest" time="0.003">
-    <system-err><![CDATA[ERRO STRIPE AO CONFIRMAR PAGAMENTO:
-Mensagem: null
-]]></system-err>
-  </testcase>
-  <testcase name="validaCartao_deveRetornarFalse" classname="com.scb.externo.service.ExternoServiceTest" time="0.003"/>
-  <testcase name="obterCobranca_deveLancarNotFoundQuandoNaoExiste" classname="com.scb.externo.service.ExternoServiceTest" time="0.003"/>
-  <testcase name="validaNumero_deveRetornarFalseParaNumeroInvalido" classname="com.scb.externo.service.ExternoServiceTest" time="0.002"/>
-  <testcase name="criarCobranca_deveCriarCobrancaComStatusSolicitada" classname="com.scb.externo.service.ExternoServiceTest" time="0.001"/>
-  <testcase name="validaNumero_deveRetornarTrueParaNumeroValido" classname="com.scb.externo.service.ExternoServiceTest" time="0.001"/>
-  <testcase name="enviarEmail_deveLancarIllegalArgumentQuandoEmailInvalido" classname="com.scb.externo.service.ExternoServiceTest" time="0.002"/>
-  <testcase name="validaNumero_deveRetornarFalseQuandoTemEspaco" classname="com.scb.externo.service.ExternoServiceTest" time="0.001"/>
-  <testcase name="pagarCobranca_quandoIdNaoExiste_deveLancarNotFound" classname="com.scb.externo.service.ExternoServiceTest" time="0.003"/>
-  <testcase name="restaurarBanco" classname="com.scb.externo.service.ExternoServiceTest" time="0.002"/>
-  <testcase name="validaCartao_deveRetornarTrue" classname="com.scb.externo.service.ExternoServiceTest" time="0.001"/>
-  <testcase name="enviarEmail_deveLancarNotFoundQuandoEmailNaoExiste" classname="com.scb.externo.service.ExternoServiceTest" time="0.002"/>
-  <testcase name="obterCobranca_deveRetornarQuandoExiste" classname="com.scb.externo.service.ExternoServiceTest" time="0.002"/>
-  <testcase name="incluirNaFila" classname="com.scb.externo.service.ExternoServiceTest" time="0.002"/>
-  <testcase name="pagarCobranca_deveLancarIllegalStateQuandoNaoTemGatewayId" classname="com.scb.externo.service.ExternoServiceTest" time="0.003"/>
-  <testcase name="marcarComoPagoPorGatewayId_deveAtualizarStatusParaPaga" classname="com.scb.externo.service.ExternoServiceTest" time="0.003"/>
-  <testcase name="processarFila_quandoStripeLancaExcecao_deveMarcarComoFalhaGateway" classname="com.scb.externo.service.ExternoServiceTest" time="0.003"/>
-  <testcase name="processarFila_quandoHaMultiplasCobrancasEmFila_deveAtualizarTodas" classname="com.scb.externo.service.ExternoServiceTest" time="0.003"/>
-  <testcase name="processarFila_quandoNaoHaCobrancasEmFila_deveRetornarListaVazia" classname="com.scb.externo.service.ExternoServiceTest" time="0.001"/>
-  <testcase name="pagarCobranca_quandoNaoTemGatewayId_deveLancarIllegalState" classname="com.scb.externo.service.ExternoServiceTest" time="0.001"/>
-  <testcase name="pagarCobranca_alterandoHorariaFinalizacao" classname="com.scb.externo.service.ExternoServiceTest" time="0.002"/>
+  <testcase name="init_deveDefinirApiKeyDaStripe_quandoApiKeyValida" classname="com.scb.externo.config.StripeConfigTest" time="0.025"/>
+  <testcase name="init_naoDeveAlterarApiKey_quandoApiKeyVaziaOuEmBranco" classname="com.scb.externo.config.StripeConfigTest" time="0.0"/>
 </testsuite>

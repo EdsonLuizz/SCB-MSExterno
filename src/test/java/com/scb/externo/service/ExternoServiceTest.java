@@ -346,15 +346,86 @@ class ExternoServiceTest {
     }
 
     @Test
+    void enviarEmail_deveLancarIllegalArgumentQuandoDominioNaoPermitido() {
+        // e-mail com formato válido, mas domínio não permitido
+        NovoEmail req = new NovoEmail("usuario@yahoo.com", "mensagem");
+
+        assertThrows(IllegalArgumentException.class,
+                () -> service.enviarEmail(req));
+
+        // garante que o Mailgun nem foi chamado
+        verifyNoInteractions(mailgunGat);
+    }
+
+    @Test
+    void processarFila_quandoStripeLancaExcecao_deveMarcarComoFalhaGateway() throws StripeException {
+        // arrange: cria cobrança "EM_FILA"
+        NovaCobranca req = new NovaCobranca("ciclistaFilaErro", 123L);
+        Cobranca emFila = service.incluirNaFila(req);
+
+        // para esse teste, fazemos o gateway lançar exceção
+        StripeException stripeEx = Mockito.mock(StripeException.class);
+        when(gatewayMock.criarIntencaoDePagamento(anyLong(), anyString()))
+                .thenThrow(stripeEx);
+
+        // act
+        var atualizadas = service.processarFila();
+
+        // assert
+        assertEquals(1, atualizadas.size());
+        Cobranca result = atualizadas.get(0);
+
+        assertEquals(emFila.id(), result.id());
+        // aqui uso startsWith para não brigar com "FALHA_GATEWAY" vs "FALHA GATAWAY"
+        assertTrue(result.status().startsWith("FALHA"));
+        assertNotNull(result.horaFinalizacao());
+    }
+
+    @Test
     void marcarComoFalhaPorGatewayId_quandoExisteCobranca_deveAtualizarStatus() {
-        // arrange: cria cobrança com gatewayID preenchido
-        NovaCobranca req = new NovaCobranca("ciclistaFalha", 200L);
-        Cobranca criada = service.criarCobranca(req);
+        // arrange: cria cobrança que já gera um gatewayID
+        NovaCobranca req = new NovaCobranca("ciclistaFalha", 500L);
+        Cobranca aguardando = service.criarCobranca(req);
 
-        service.marcarComoFalhaPorGatewayId(criada.gatewayID());
+        // sanity check
+        assertNotNull(aguardando.gatewayID());
 
-        Cobranca atualizada = service.obterCobranca(criada.id());
+        // act
+        service.marcarComoFalhaPorGatewayId(aguardando.gatewayID());
+
+        // assert
+        Cobranca atualizada = service.obterCobranca(aguardando.id());
         assertEquals("FALHA", atualizada.status());
         assertNotNull(atualizada.horaFinalizacao());
+    }
+
+    @Test
+    void pagarCobranca_quandoNaoTemGatewayId_deveLancarIllegalState() {
+        // arrange: incluirNaFila cria cobrança com gatewayID == null
+        NovaCobranca req = new NovaCobranca("semGateway", 200L);
+        Cobranca emFila = service.incluirNaFila(req);
+
+        // act + assert
+        assertThrows(IllegalStateException.class,
+                () -> service.pagarCobranca(emFila.id()));
+    }
+
+    @Test
+    void pagarCobranca_quandoStripeLancaExcecao_deveMarcarComoFalhaGateway() throws StripeException {
+        // arrange: cria cobrança com gatewayID preenchido
+        NovaCobranca req = new NovaCobranca("ciclistaStripeErro", 300L);
+        Cobranca aguardando = service.criarCobranca(req);
+
+        // para esse teste, confirmarPaymentIntentComCartaoTeste lança StripeException
+        StripeException stripeEx = Mockito.mock(StripeException.class);
+        when(gatewayMock.confirmarPaymentIntentComCartaoTeste(anyString()))
+                .thenThrow(stripeEx);
+
+        // act
+        Cobranca resultado = service.pagarCobranca(aguardando.id());
+
+        // assert
+        assertTrue(resultado.status().startsWith("FALHA"));
+        assertNotNull(resultado.horaFinalizacao());
     }
 }

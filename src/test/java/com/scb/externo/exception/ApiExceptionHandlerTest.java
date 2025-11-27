@@ -121,4 +121,40 @@ class ApiExceptionHandlerTest {
         assertEquals("422", resp.getBody().get(0).codigo());
         assertEquals("erro de negócio", resp.getBody().get(0).mensagem());
     }
+
+    @Test
+    void onValidation_quandoPostCobrancaOuFila_deveRetornarErroPadrao() throws Exception {
+        Object target = new Object();
+        BeanPropertyBindingResult bindingResult =
+                new BeanPropertyBindingResult(target, "target");
+        bindingResult.addError(new FieldError("target", "campo", "mensagem qualquer"));
+
+        Method method = this.getClass().getDeclaredMethod("dummy", String.class);
+        MethodParameter methodParameter = new MethodParameter(method, 0);
+
+        MethodArgumentNotValidException ex =
+                new MethodArgumentNotValidException(methodParameter, bindingResult);
+
+        // POST /cobranca
+        MockHttpServletRequest reqCobranca = new MockHttpServletRequest("POST", "/cobranca");
+        var respCobranca = handler.onValidation(ex, reqCobranca);
+
+        assertEquals(HttpStatus.UNPROCESSABLE_ENTITY, respCobranca.getStatusCode());
+        assertNotNull(respCobranca.getBody());
+        assertEquals(1, respCobranca.getBody().size());
+        Erro erroCobranca = respCobranca.getBody().get(0);
+        assertEquals("422", erroCobranca.codigo());
+        assertEquals("Dados Inválidos", erroCobranca.mensagem());
+
+        // POST /filaCobranca
+        MockHttpServletRequest reqFila = new MockHttpServletRequest("POST", "/filaCobranca");
+        var respFila = handler.onValidation(ex, reqFila);
+
+        assertEquals(HttpStatus.UNPROCESSABLE_ENTITY, respFila.getStatusCode());
+        assertNotNull(respFila.getBody());
+        assertEquals(1, respFila.getBody().size());
+        Erro erroFila = respFila.getBody().get(0);
+        assertEquals("422", erroFila.codigo());
+        assertEquals("Dados Inválidos", erroFila.mensagem());
+    }
 }
