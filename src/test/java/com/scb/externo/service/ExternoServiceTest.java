@@ -459,4 +459,97 @@ class ExternoServiceTest {
         assertNotNull(atualizada.horaFinalizacao());
     }
 
+    @Test
+    void processarFila_quandoCobrancaJaFalha_deveTentarNovamenteEAprovar() throws Exception {
+        // arrange: cria cobrança EM_FILA
+        NovaCobranca req = new NovaCobranca("ciclistaFalhaRetentativa", 500L);
+        Cobranca emFila = service.incluirNaFila(req);
+
+        // força o status inicial para FALHA (simula tentativa anterior que deu erro)
+        var campoCobrancas = ExternoService.class.getDeclaredField("cobrancas");
+        campoCobrancas.setAccessible(true);
+        @SuppressWarnings("unchecked")
+        Map<Long, Cobranca> mapa =
+                (Map<Long, Cobranca>) campoCobrancas.get(service);
+
+        Cobranca falhaAnterior = new Cobranca(
+                emFila.id(),
+                "FALHA",
+                emFila.horaSolicitacao(),
+                emFila.horaFinalizacao(),
+                emFila.valor(),
+                emFila.ciclista(),
+                emFila.gatewayID()
+        );
+        mapa.put(emFila.id(), falhaAnterior);
+
+        // act
+        var atualizadas = service.processarFila();
+
+        // assert: retentativa bem-sucedida marca como PAGA
+        assertEquals(1, atualizadas.size());
+        Cobranca atualizada = atualizadas.get(0);
+        assertEquals("PAGA", atualizada.status());
+        assertNotNull(atualizada.horaFinalizacao());
+        assertNotNull(atualizada.gatewayID());
+    }
+
+    @Test
+    void processarFila_quandoStripeRetornaRequiresPaymentMethod_deveMarcarFalha() throws StripeException {
+        // arrange: status específico da Stripe mapeado para FALHA
+        PaymentIntent piFalha = Mockito.mock(PaymentIntent.class);
+        when(piFalha.getStatus()).thenReturn("requires_payment_method");
+        when(piFalha.getId()).thenReturn("pi_req_123");
+        when(gatewayMock.confirmarPaymentIntentComCartaoTeste(anyString()))
+                .thenReturn(piFalha);
+
+        NovaCobranca req = new NovaCobranca("ciclistaFalhaStatus", 600L);
+        service.incluirNaFila(req);
+
+        // act
+        var atualizadas = service.processarFila();
+
+        // assert
+        assertEquals(1, atualizadas.size());
+        Cobranca result = atualizadas.get(0);
+        assertEquals("FALHA", result.status());
+        assertNotNull(result.horaFinalizacao());
+        assertEquals("pi_req_123", result.gatewayID());
+    }
+
+    @Test
+    void processarFila_quandoPagamentoSucessoECiclistaEhEmailValido_deveEnviarEmail() {
+        // arrange: ciclista contém '@', logo é tratado como e-mail
+        NovaCobranca req = new NovaCobranca("cliente@teste.com", 800L);
+        service.incluirNaFila(req);
+
+        // zera interações anteriores com o Mailgun
+        Mockito.clearInvocations(mailgunGat);
+
+        // act
+        service.processarFila();
+
+        // assert: e-mail enviado uma vez
+        verify(mailgunGat, times(1)).enviarEmailSimples(
+                eq("cliente@teste.com"),
+                eq("SCB - Cobrança em atraso paga"),
+                contains("ID da transação")
+        );
+    }
+
+    @Test
+    void processarFila_quandoPagamentoSucessoMasCiclistaNaoEhEmail_naoEnviaEmail() {
+        // arrange: ciclista sem '@' => não é e-mail
+        NovaCobranca req = new NovaCobranca("ciclistaSemEmail", 900L);
+        service.incluirNaFila(req);
+
+        Mockito.clearInvocations(mailgunGat);
+
+        // act
+        service.processarFila();
+
+        // assert: nenhum envio de e-mail é realizado
+        verifyNoInteractions(mailgunGat);
+    }
+
 }
