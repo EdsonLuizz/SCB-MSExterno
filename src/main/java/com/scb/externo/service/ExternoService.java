@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 @Service
 public class ExternoService {
 
+    private static final String STATUS_AGUARDANDO_PAGAMENTO = "AGUARDANDO_PAGAMENTO";
     private static final Logger log = LoggerFactory.getLogger(ExternoService.class);
     private final AtomicLong seq = new AtomicLong(1);
     private final Map<Long, Cobranca> cobrancas = new ConcurrentHashMap<>();
@@ -133,7 +134,7 @@ public class ExternoService {
 
             Cobranca c = new Cobranca(
                     id,
-                    "AGUARDANDO_PAGAMENTO",
+                    STATUS_AGUARDANDO_PAGAMENTO,
                     agora,
                     null,
                     req.valor(),
@@ -242,7 +243,7 @@ public class ExternoService {
 
                         // marca como AGUARDANDO_PAGAMENTO e grava o gatewayID
                         Cobranca aguardando = new Cobranca(
-                                c.id(), "AGUARDANDO_PAGAMENTO", c.horaSolicitacao(), null, c.valor(), c.ciclista(), pi.getId()         // id do PaymentIntent
+                                c.id(), STATUS_AGUARDANDO_PAGAMENTO, c.horaSolicitacao(), null, c.valor(), c.ciclista(), pi.getId()         // id do PaymentIntent
                         );
                         cobrancas.put(c.id(), aguardando);
                         atualizadas.add(aguardando);
@@ -275,7 +276,7 @@ public class ExternoService {
                 case "requires_payment_method",
                      "requires_action",
                      "canceled" -> novoStatus = "FALHA";
-                default -> novoStatus = "AGUARDANDO_PAGAMENTO";
+                default -> novoStatus = STATUS_AGUARDANDO_PAGAMENTO;
             }
 
             Cobranca atualizada = new Cobranca(atual.id(), "PAGA", atual.horaSolicitacao(), Instant.now(), atual.valor(), atual.ciclista(), atual.gatewayID());

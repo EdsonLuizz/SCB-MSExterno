@@ -58,7 +58,7 @@ public class ExternoController {
   }
 
   @PostMapping("/validaCartaoDeCredito")
-  public ResponseEntity<?> validaCartaoDeCredito(@RequestBody @Valid NovoCartaoDeCredito req) {
+  public ResponseEntity<Object> validaCartaoDeCredito(@RequestBody @Valid NovoCartaoDeCredito req) {
 
       boolean valido = service.validaCartaoLuhn(req);
 
