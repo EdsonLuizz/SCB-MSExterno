@@ -268,15 +268,28 @@ public class ExternoService {
             return atualizada;
 
         } catch (StripeException e) {
-            System.err.println("ERRO STRIPE AO CONFIRMAR PAGAMENTO:");
-            System.err.println("Mensagem: " + e.getMessage());
             if (e.getStripeError() != null) {
-                System.err.println("Código:   " + e.getStripeError().getCode());
-                System.err.println("Tipo:     " + e.getStripeError().getType());
-                System.err.println("Detalhe:  " + e.getStripeError().getMessage());
+                log.error(
+                        "Erro Stripe ao confirmar pagamento. msg={}, code={}, type={}, detail={}",
+                        e.getMessage(),
+                        e.getStripeError().getCode(),
+                        e.getStripeError().getType(),
+                        e.getStripeError().getMessage(),
+                        e
+                );
+            } else {
+                log.error("Erro Stripe ao confirmar pagamento. msg={}", e.getMessage(), e);
             }
 
-            Cobranca falha = new Cobranca(atual.id(), "FALHA GATEWAY", atual.horaSolicitacao(), Instant.now(), atual.valor(), atual.ciclista(), atual.gatewayID());
+            Cobranca falha = new Cobranca(
+                    atual.id(),
+                    "FALHA GATEWAY",
+                    atual.horaSolicitacao(),
+                    Instant.now(),
+                    atual.valor(),
+                    atual.ciclista(),
+                    atual.gatewayID()
+            );
             cobrancas.put(atual.id(), falha);
             return falha;
         }
