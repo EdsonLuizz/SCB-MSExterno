@@ -214,96 +214,6 @@ public class ExternoService {
                 });
     }
 
-
-    /*public List<Cobranca> processarFila() {
-        List<Cobranca> atualizadas = new ArrayList<>();
-
-        cobrancas.values().stream()
-                // UC16 – só pega quem está pendente
-                .filter(c -> "EM_FILA".equals(c.status()) || STATUS_FALHA.equals(c.status()))
-                .forEach(c -> {
-                    try {
-                        // 1) Cria a intenção de pagamento (valor já em centavos)
-                        PaymentIntent piCriado = stripeGateway.criarIntencaoDePagamento(
-                                c.valor(),
-                                "Cobranca atrasada ciclista " + c.ciclista()
-                        );
-
-                        // 2) Confirma o pagamento imediatamente (processo em lote)
-                        PaymentIntent piConfirmado =
-                                stripeGateway.confirmarPaymentIntentComCartaoTeste(piCriado.getId());
-
-                        String statusStripe = piConfirmado.getStatus();
-                        String novoStatus;
-
-                        // 3) Mapeia o status retornado pela Stripe
-                        switch (statusStripe) {
-                            case "succeeded" -> novoStatus = "PAGA";
-                            case "requires_payment_method",
-                                 "requires_action",
-                                 "canceled" -> novoStatus = "FALHA";
-                            default -> novoStatus = STATUS_AGUARDANDO_PAGAMENTO;
-                        }
-
-                        Instant agora = Instant.now();
-                        Instant horaFinalizacao =
-                                ("PAGA".equals(novoStatus) || STATUS_FALHA.equals(novoStatus))
-                                        ? agora
-                                        : null;
-
-                        Cobranca atualizada = new Cobranca(
-                                c.id(),
-                                novoStatus,
-                                c.horaSolicitacao() != null ? c.horaSolicitacao() : agora,
-                                horaFinalizacao,
-                                c.valor(),
-                                c.ciclista(),
-                                piConfirmado.getId()   // registra o ID da transação (R1)
-                        );
-
-                        cobrancas.put(c.id(), atualizada);
-                        atualizadas.add(atualizada);
-
-                        // 4) Se deu tudo certo, envia e-mail de notificação (R2)
-                        if ("PAGA".equals(novoStatus)) {
-                            String emailDestino = c.ciclista();
-
-                            if (emailDestino != null && emailDestino.contains("@")) {
-                                String assunto = "SCB - Cobrança em atraso paga";
-                                String corpo = "Olá, sua cobrança em atraso no valor de "
-                                        + c.valor() + " centavos foi paga com sucesso. "
-                                        + "ID da transação: " + piConfirmado.getId() + ".";
-
-                                mailgunGateway.enviarEmailSimples(emailDestino, assunto, corpo);
-                            } else {
-                                log.warn("Cobrança {} marcada como PAGA, mas ciclista '{}' não é um e-mail válido.",
-                                        c.id(), c.ciclista());
-                            }
-                        }
-
-                    } catch (StripeException e) {
-                        // 5) Fluxo de exceção E1 – mantém pendente/falha para retentativa futura
-                        log.error("Erro ao processar cobrança atrasada {} para ciclista {}.",
-                                c.id(), c.ciclista(), e);
-
-                        Instant agora = Instant.now();
-                        Cobranca falha = new Cobranca(
-                                c.id(),
-                                STATUS_FALHA,
-                                c.horaSolicitacao() != null ? c.horaSolicitacao() : agora,
-                                agora,
-                                c.valor(),
-                                c.ciclista(),
-                                c.gatewayID() // pode continuar nulo
-                        );
-                        cobrancas.put(c.id(), falha);
-                        atualizadas.add(falha);
-                    }
-                });
-
-        return atualizadas;
-    }*/
-
     private boolean estaPendenteOuFalha(Cobranca c) {
         return STATUS_EM_FILA.equals(c.status()) || STATUS_FALHA.equals(c.status());
     }
@@ -429,10 +339,10 @@ public class ExternoService {
 
             String novoStatus;
             switch (pi.getStatus()) {
-                case "succeeded" -> novoStatus = "PAGA";
+                case "succeeded" -> novoStatus = STATUS_PAGA;
                 case "requires_payment_method",
                      "requires_action",
-                     "canceled" -> novoStatus = "FALHA";
+                     "canceled" -> novoStatus = STATUS_FALHA;
                 default -> novoStatus = STATUS_AGUARDANDO_PAGAMENTO;
             }
 
