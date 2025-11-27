@@ -5,6 +5,7 @@ import com.scb.externo.service.ExternoService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.*;
 import com.scb.externo.dto.NovoCartaoDeCredito;
 import com.scb.externo.dto.Erro;
@@ -72,4 +73,10 @@ public class ExternoController {
       // se for válido, devolve o próprio JSON como no Swagger
       return ResponseEntity.ok(req);
   }
+
+    @PostMapping("/cobranca/fila/processar")
+    public ResponseEntity<List<Cobranca>> processarCobrancasEmFila() {
+        List<Cobranca> atualizadas = service.processarFila();
+        return ResponseEntity.ok(atualizadas);
+    }
 }

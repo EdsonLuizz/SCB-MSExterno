@@ -1,4 +1,4 @@
 -------------------------------------------------------------------------------
 Test set: com.scb.externo.controller.StripeControllerTest
 -------------------------------------------------------------------------------
-Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.518 s -- in com.scb.externo.controller.StripeControllerTest
+Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.858 s -- in com.scb.externo.controller.StripeControllerTest

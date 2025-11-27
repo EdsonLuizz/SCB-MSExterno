@@ -30,24 +30,22 @@ class ExternoServiceTest {
         gatewayMock = Mockito.mock(StripeGat.class);
         mailgunGat  = Mockito.mock(MailgunGat.class);
 
-        // 1) Mock da criação do PaymentIntent (usado em criarCobranca)
+        // Mock da criação
         PaymentIntent piCriacao = Mockito.mock(PaymentIntent.class);
         when(piCriacao.getId()).thenReturn("pi_test_123");
 
-        when(gatewayMock.criarIntencaoDePagamento(
-                anyLong(),
-                anyString()
-        )).thenReturn(piCriacao);
+        when(gatewayMock.criarIntencaoDePagamento(anyLong(), anyString()))
+                .thenReturn(piCriacao);
 
-        // 2) Mock da CONFIRMAÇÃO do PaymentIntent (usado em pagarCobranca)
+        // Mock da confirmação
         PaymentIntent piConfirmado = Mockito.mock(PaymentIntent.class);
-        when(piConfirmado.getStatus()).thenReturn("succeeded"); // status de sucesso
+        when(piConfirmado.getStatus()).thenReturn("succeeded");
+        // IMPORTANTE: definir o id também
+        when(piConfirmado.getId()).thenReturn("pi_test_123");
 
-        when(gatewayMock.confirmarPaymentIntentComCartaoTeste(
-                anyString()               // vai receber o gatewayID, ex: "pi_test_123"
-        )).thenReturn(piConfirmado);
+        when(gatewayMock.confirmarPaymentIntentComCartaoTeste(anyString()))
+                .thenReturn(piConfirmado);
 
-        // 3) injeta os mocks no service
         service = new ExternoService(gatewayMock, mailgunGat);
         service.restaurarBanco();
     }
@@ -265,13 +263,11 @@ class ExternoServiceTest {
         Cobranca processada = atualizadas.get(0);
 
         assertEquals(emFila.id(), processada.id());
-        // status que o seu processarFila define (ajuste se for outro):
-        assertEquals("AGUARDANDO_PAGAMENTO", processada.status());
-        // gatewayId deve ter sido preenchido com o id do PaymentIntent mockado no setUp
+        assertEquals("PAGA", processada.status());
         assertEquals("pi_test_123", processada.gatewayID());
-        // e, conforme o ajuste que você fez, a horaFinalizacao deve continuar nula
-        assertNull(processada.horaFinalizacao());
+        assertNotNull(processada.horaFinalizacao());
     }
+
 
     @Test
     void pagarCobranca_quandoIdNaoExiste_deveLancarNotFound() {
@@ -290,8 +286,9 @@ class ExternoServiceTest {
         var atualizadas = service.processarFila();
 
         for (Cobranca c : atualizadas) {
-            assertEquals("AGUARDANDO_PAGAMENTO", c.status());
+            assertEquals("PAGA", c.status());
             assertEquals("pi_test_123", c.gatewayID());
+            assertNotNull(c.horaFinalizacao());
         }
     }
 
