@@ -32,19 +32,14 @@ class StripeControllerTest {
 
     @Test
     void webhook_quandoAssinaturaInvalida_deveRetornarBadRequest() throws Exception {
-        // não mocka Webhook -> vai lançar SignatureVerificationException
-        mvc.perform(post("/stripe/webhook")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{}")
-                        .header("Stripe-Signature", "assinatura_errada"))
-                .andExpect(status().isBadRequest())
-                .andExpect(content().string("Assinatura inválida"));
+        // não mocka Webhook, pois lança SignatureVerificationException
+        mvc.perform(post("/stripe/webhook").contentType(MediaType.APPLICATION_JSON).content("{}").header("Stripe-Signature", "assinatura_errada")).andExpect(status().isBadRequest()).andExpect(content().string("Assinatura inválida"));
 
         verifyNoInteractions(service);
     }
 
     @Test
-    void webhook_quandoPaymentSucceeded_deveChamarMarcarComoPago() throws Exception {
+    void webhook_PaymentSucceeded_ChamaMarcarComoPago() throws Exception {
         String payload = """
                 {
                   "type": "payment_intent.succeeded",
@@ -52,7 +47,7 @@ class StripeControllerTest {
                 }
                 """;
 
-        // monta Event "fake"
+        // Fake event
         Event eventMock = mock(Event.class);
         when(eventMock.getType()).thenReturn("payment_intent.succeeded");
 
@@ -64,14 +59,9 @@ class StripeControllerTest {
         when(eventMock.getDataObjectDeserializer()).thenReturn(deser);
 
         try (MockedStatic<Webhook> webhook = Mockito.mockStatic(Webhook.class)) {
-            webhook.when(() ->
-                            Webhook.constructEvent(anyString(), anyString(), anyString()))
-                    .thenReturn(eventMock);
+            webhook.when(() -> Webhook.constructEvent(anyString(), anyString(), anyString())).thenReturn(eventMock);
 
-            mvc.perform(post("/stripe/webhook")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(payload)
-                            .header("Stripe-Signature", "qualquer"))
+            mvc.perform(post("/stripe/webhook").contentType(MediaType.APPLICATION_JSON).content(payload).header("Stripe-Signature", "qualquer"))
                     .andExpect(status().isOk())
                     .andExpect(content().string("ok"));
         }
@@ -81,7 +71,7 @@ class StripeControllerTest {
     }
 
     @Test
-    void webhook_quandoPaymentFailed_deveChamarMarcarComoFalha() throws Exception {
+    void webhook_PaymentFailed_ChamaMarcarComoFalha() throws Exception {
         String payload = """
                 {
                   "type": "payment_intent.payment_failed",
@@ -100,14 +90,9 @@ class StripeControllerTest {
         when(eventMock.getDataObjectDeserializer()).thenReturn(deser);
 
         try (MockedStatic<Webhook> webhook = Mockito.mockStatic(Webhook.class)) {
-            webhook.when(() ->
-                            Webhook.constructEvent(anyString(), anyString(), anyString()))
-                    .thenReturn(eventMock);
+            webhook.when(() -> Webhook.constructEvent(anyString(), anyString(), anyString())).thenReturn(eventMock);
 
-            mvc.perform(post("/stripe/webhook")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(payload)
-                            .header("Stripe-Signature", "qualquer"))
+            mvc.perform(post("/stripe/webhook").contentType(MediaType.APPLICATION_JSON).content(payload).header("Stripe-Signature", "qualquer"))
                     .andExpect(status().isOk())
                     .andExpect(content().string("ok"));
         }

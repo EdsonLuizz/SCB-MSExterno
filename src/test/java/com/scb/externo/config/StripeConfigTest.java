@@ -13,7 +13,7 @@ class StripeConfigTest {
     void init_deveDefinirApiKeyDaStripe_quandoApiKeyValida() throws Exception {
         StripeConfig config = new StripeConfig();
 
-        // injeta o valor no campo privado "apiKey"
+        // coloca o valor no campo privado "apiKey"
         Field field = StripeConfig.class.getDeclaredField("apiKey");
         field.setAccessible(true);
         field.set(config, "chave-teste");
@@ -21,10 +21,8 @@ class StripeConfigTest {
         // garante estado inicial conhecido
         Stripe.apiKey = null;
 
-        // act
         config.init();
 
-        // assert
         assertEquals("chave-teste", Stripe.apiKey);
     }
 
@@ -32,18 +30,16 @@ class StripeConfigTest {
     void init_naoDeveAlterarApiKey_quandoApiKeyVaziaOuEmBranco() throws Exception {
         StripeConfig config = new StripeConfig();
 
-        // apiKey em branco -> cai no "return" do init()
+        // apiKey em branco
         Field field = StripeConfig.class.getDeclaredField("apiKey");
         field.setAccessible(true);
         field.set(config, "   ");
 
-        // estado anterior da Stripe
+        // volta para o estado inicial da chave
         Stripe.apiKey = "valor-anterior";
 
-        // act
         config.init();
 
-        // assert: continua com o valor anterior
         assertEquals("valor-anterior", Stripe.apiKey);
     }
 }

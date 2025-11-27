@@ -47,12 +47,12 @@ public class ExternoService {
     public Email enviarEmail(NovoEmail req) {
         String email = req.email();
 
-        // 1) valida formato básico
+        // faz a validação do formato básico do email
         if (email == null || !email.contains("@")) {
             throw new IllegalArgumentException("Formato de e-mail inválido");
         }
 
-        // 2) valida domínio permitido (@gmail ou @hotmail)
+        // valida domínio permitido (@gmail ou @hotmail)
         String dominio = email.substring(email.indexOf("@") + 1).toLowerCase();
         boolean dominioValido =
                 dominio.endsWith("gmail.com") ||
@@ -62,52 +62,33 @@ public class ExternoService {
             throw new IllegalArgumentException("Formato de e-mail inválido");
         }
 
-        // 3) assunto fixo, como você usou nos testes
         String assunto = "SCB - Notificação";
 
-        // 4) chama o Mailgun
-        //    - se o mock estiver configurado com doThrow(NotFoundException),
-        //      essa exceção vai subir daqui
-        mailgunGateway.enviarEmailSimples(
-                email,
-                assunto,
-                req.mensagem()
+        mailgunGateway.enviarEmailSimples(email, assunto, req.mensagem()
         );
 
-        // 5) monta o DTO de resposta
+        //DTO de resposta
         long id = seq.getAndIncrement();
         return new Email(id, email, assunto, req.mensagem());
     }
 
-    /**
-     * Coloca a cobrança na fila, ainda sem criar PaymentIntent.
-     * Você pode decidir mais tarde processar a fila chamando Stripe.
-     */
+    // Coloca a cobrança na fila
+
     public Cobranca incluirNaFila(NovaCobranca req) {
         fila.add(req);
         long id = seq.getAndIncrement();
 
         Instant agora = Instant.now();
 
-        Cobranca c = new Cobranca(
-                id,                 // id
-                STATUS_EM_FILA,          // status
-                agora,              // horaSolicitacao
-                null,               // horaFinalizacao (ainda não concluída)
-                req.valor(),        // valor
-                req.ciclista(),     // ciclista
-                null                // gatewayID (ainda não criado)
-        );
+        Cobranca c = new Cobranca(id, STATUS_EM_FILA, agora, null, req.valor(), req.ciclista(), null);
 
         cobrancas.put(id, c);
         return c;
     }
 
-    /**
-     * Cria uma cobrança imediata + PaymentIntent na Stripe.
-     * Status inicial: AGUARDANDO_PAGAMENTO.
-     * O status final (PAGA/FALHA) será ajustado pelo webhook.
-     */
+    // Cria uma cobrança imediata + PaymentIntent na Stripe.
+    // O status final (PAGA/FALHA) será ajustado pelo webhook.
+
     public Cobranca criarCobranca(NovaCobranca req) {
         long id = seq.getAndIncrement();
         Instant agora = Instant.now();
@@ -119,30 +100,15 @@ public class ExternoService {
                     "Cobranca ciclista " + req.ciclista()
             );
 
-            Cobranca c = new Cobranca(
-                    id,
-                    STATUS_AGUARDANDO_PAGAMENTO,
-                    agora,
-                    null,
-                    req.valor(),
-                    req.ciclista(),
-                    pi.getId()
-            );
+            Cobranca c = new Cobranca(id, STATUS_AGUARDANDO_PAGAMENTO, agora, null, req.valor(), req.ciclista(), pi.getId());
             cobrancas.put(id, c);
             return c;
+
         } catch (StripeException e) {
             log.error("Erro ao criar PaymentIntent no Stripe para o ciclista {}.",
                     req.ciclista(), e);
 
-            Cobranca c = new Cobranca(
-                    id,
-                    "FALHA_GATEWAY",
-                    agora,
-                    agora,
-                    req.valor(),
-                    req.ciclista(),
-                    null
-            );
+            Cobranca c = new Cobranca(id, "FALHA_GATEWAY", agora, agora, req.valor(), req.ciclista(), null);
             cobrancas.put(id, c);
             return c;
         }
@@ -153,6 +119,8 @@ public class ExternoService {
         if (c == null) throw new NotFoundException("Cobrança não encontrada");
         return c;
     }
+
+    //método para validação de número de cartão de crédito
 
     public boolean validaNumero(String n) {
 
@@ -179,31 +147,22 @@ public class ExternoService {
         return validaNumero(cartao.numero());
     }
 
-    /**
-     * Chamado pelo webhook quando a Stripe informar que o pagamento foi aprovado.
-     */
+    // Chamado pelo webhook quando a Stripe informar que o pagamento foi aprovado.
+
     public void marcarComoPagoPorGatewayId(String gatewayId) {
         Cobranca original = cobrancas.values().stream()
                 .filter(c -> gatewayId.equals(c.gatewayID()))
                 .findFirst()
                 .orElseThrow(() -> new NotFoundException("Cobrança não encontrada para gatewayId " + gatewayId));
 
-        Cobranca atualizada = new Cobranca(
-                original.id(),
-                STATUS_PAGA,
-                original.horaSolicitacao(),
-                Instant.now(),           // horaFinalizacao
-                original.valor(),
-                original.ciclista(),
-                original.gatewayID()
+        Cobranca atualizada = new Cobranca(original.id(), STATUS_PAGA, original.horaSolicitacao(), Instant.now(), original.valor(), original.ciclista(), original.gatewayID()
         );
 
         cobrancas.put(original.id(), atualizada);
     }
 
-    /**
-     * Chamado pelo webhook quando a Stripe informar que o pagamento falhou.
-     */
+    // Chamado pelo webhook quando a Stripe informar que o pagamento falhou.
+
     public void marcarComoFalhaPorGatewayId(String gatewayId) {
         cobrancas.values().stream()
                 .filter(c -> gatewayId.equals(c.gatewayID()))
@@ -222,7 +181,7 @@ public class ExternoService {
         try {
             PaymentIntent piCriado = criarPaymentIntent(c);
             PaymentIntent piConfirmado =
-                    stripeGateway.confirmarPaymentIntentComCartaoTeste(piCriado.getId());
+                    stripeGateway.confirmaIntencaoPagamentoComCartaoTeste(piCriado.getId());
 
             tratarRetornoStripe(c, piConfirmado, atualizadas);
         } catch (StripeException e) {
@@ -232,35 +191,24 @@ public class ExternoService {
 
     private PaymentIntent criarPaymentIntent(Cobranca c) throws StripeException {
         return stripeGateway.criarIntencaoDePagamento(
-                c.valor(),
-                "Cobranca atrasada ciclista " + c.ciclista()
+                c.valor(), "Cobranca atrasada ciclista " + c.ciclista()
         );
     }
 
-    private void tratarRetornoStripe(Cobranca original,
-                                     PaymentIntent piConfirmado,
-                                     List<Cobranca> atualizadas) {
+    private void tratarRetornoStripe(Cobranca original, PaymentIntent piConfirmado, List<Cobranca> atualizadas) {
 
         String statusStripe = piConfirmado.getStatus();
         String novoStatus = mapearStatusStripe(statusStripe);
 
         Instant agora = Instant.now();
-        Instant horaFinalizacao = precisaHoraFinalizacao(novoStatus) ? agora : null;
+        Instant horaFinalizacao = HoraFinalizacao(novoStatus) ? agora : null;
 
-        Cobranca atualizada = new Cobranca(
-                original.id(),
-                novoStatus,
-                original.horaSolicitacao() != null ? original.horaSolicitacao() : agora,
-                horaFinalizacao,
-                original.valor(),
-                original.ciclista(),
-                piConfirmado.getId()
-        );
+        Cobranca atualizada = new Cobranca(original.id(), novoStatus, original.horaSolicitacao() != null ? original.horaSolicitacao() : agora, horaFinalizacao, original.valor(), original.ciclista(), piConfirmado.getId());
 
         cobrancas.put(original.id(), atualizada);
         atualizadas.add(atualizada);
 
-        notificarEmailSeNecessario(atualizada, piConfirmado.getId());
+        notificarEmail(atualizada, piConfirmado.getId());
     }
 
     private String mapearStatusStripe(String statusStripe) {
@@ -271,11 +219,11 @@ public class ExternoService {
         };
     }
 
-    private boolean precisaHoraFinalizacao(String status) {
+    private boolean HoraFinalizacao(String status) {
         return STATUS_PAGA.equals(status) || STATUS_FALHA.equals(status);
     }
 
-    private void notificarEmailSeNecessario(Cobranca cobranca, String paymentIntentId) {
+    private void notificarEmail(Cobranca cobranca, String paymentIntentId) {
         if (!STATUS_PAGA.equals(cobranca.status())) {
             return;
         }
@@ -283,66 +231,49 @@ public class ExternoService {
         String emailDestino = cobranca.ciclista();
         if (emailDestino != null && emailDestino.contains("@")) {
             String assunto = "SCB - Cobrança em atraso paga";
-            String corpo = "Olá, sua cobrança em atraso no valor de "
-                    + cobranca.valor() + " centavos foi paga com sucesso. "
-                    + "ID da transação: " + paymentIntentId + ".";
+            String corpo = "Olá, sua cobrança em atraso no valor de " + cobranca.valor() + " centavos foi paga com sucesso. " + "ID da transação: " + paymentIntentId + ".";
 
             mailgunGateway.enviarEmailSimples(emailDestino, assunto, corpo);
         } else {
-            log.warn(
-                    "Cobrança {} marcada como PAGA, mas ciclista '{}' não é um e-mail válido.",
-                    cobranca.id(), cobranca.ciclista()
+            log.warn("Cobrança {} marcada como PAGA, mas ciclista '{}' não é um e-mail válido.", cobranca.id(), cobranca.ciclista()
             );
         }
     }
 
-    private void tratarErroProcessamento(Cobranca c,
-                                         List<Cobranca> atualizadas,
-                                         StripeException e) {
-        log.error("Erro ao processar cobrança atrasada {} para ciclista {}.",
-                c.id(), c.ciclista(), e);
+    private void tratarErroProcessamento(Cobranca c, List<Cobranca> atualizadas, StripeException e) {
+
+        log.error("Erro ao processar cobrança atrasada {} para ciclista {}.", c.id(), c.ciclista(), e);
 
         Instant agora = Instant.now();
-        Cobranca falha = new Cobranca(
-                c.id(),
-                STATUS_FALHA,
-                c.horaSolicitacao() != null ? c.horaSolicitacao() : agora,
-                agora,
-                c.valor(),
-                c.ciclista(),
-                c.gatewayID()
-        );
+        Cobranca falha = new Cobranca(c.id(), STATUS_FALHA, c.horaSolicitacao() != null ? c.horaSolicitacao() : agora, agora, c.valor(), c.ciclista(), c.gatewayID());
         cobrancas.put(c.id(), falha);
         atualizadas.add(falha);
     }
 
-
     public List<Cobranca> processarFila() {
         List<Cobranca> atualizadas = new ArrayList<>();
 
-        cobrancas.values().stream()
-                .filter(this::estaPendenteOuFalha)
-                .forEach(c -> processarCobrancaDaFila(c, atualizadas));
+        cobrancas.values().stream().filter(this::estaPendenteOuFalha).forEach(c -> processarCobrancaDaFila(c, atualizadas));
 
         return atualizadas;
     }
 
     public Cobranca pagarCobranca(Long idCobranca) {
-        Cobranca atual = obterCobranca(idCobranca); // já lança NotFound se não existir
 
+        Cobranca atual = obterCobranca(idCobranca);
+
+        // lança NotFound se a cobrancça não existir
         if (atual.gatewayID() == null) {
             throw new IllegalStateException("Cobrança não possui gatewayID (PaymentIntent).");
         }
 
         try {
-            PaymentIntent pi = stripeGateway.confirmarPaymentIntentComCartaoTeste(atual.gatewayID());
+            PaymentIntent pi = stripeGateway.confirmaIntencaoPagamentoComCartaoTeste(atual.gatewayID());
 
             String novoStatus;
             switch (pi.getStatus()) {
                 case "succeeded" -> novoStatus = STATUS_PAGA;
-                case "requires_payment_method",
-                     "requires_action",
-                     "canceled" -> novoStatus = STATUS_FALHA;
+                case "requires_payment_method", "requires_action", "canceled" -> novoStatus = STATUS_FALHA;
                 default -> novoStatus = STATUS_AGUARDANDO_PAGAMENTO;
             }
 
@@ -352,27 +283,12 @@ public class ExternoService {
 
         } catch (StripeException e) {
             if (e.getStripeError() != null) {
-                log.error(
-                        "Erro Stripe ao confirmar pagamento. msg={}, code={}, type={}, detail={}",
-                        e.getMessage(),
-                        e.getStripeError().getCode(),
-                        e.getStripeError().getType(),
-                        e.getStripeError().getMessage(),
-                        e
-                );
+                log.error("Erro Stripe ao confirmar pagamento. msg={}, code={}, type={}, detail={}", e.getMessage(), e.getStripeError().getCode(), e.getStripeError().getType(), e.getStripeError().getMessage(), e);
             } else {
                 log.error("Erro Stripe ao confirmar pagamento. msg={}", e.getMessage(), e);
             }
 
-            Cobranca falha = new Cobranca(
-                    atual.id(),
-                    "FALHA GATEWAY",
-                    atual.horaSolicitacao(),
-                    Instant.now(),
-                    atual.valor(),
-                    atual.ciclista(),
-                    atual.gatewayID()
-            );
+            Cobranca falha = new Cobranca(atual.id(), "FALHA GATEWAY", atual.horaSolicitacao(), Instant.now(), atual.valor(), atual.ciclista(), atual.gatewayID());
             cobrancas.put(atual.id(), falha);
             return falha;
         }

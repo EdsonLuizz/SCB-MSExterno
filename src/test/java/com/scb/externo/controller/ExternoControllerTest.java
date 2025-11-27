@@ -25,7 +25,7 @@ class ExternoControllerTest {
     private ExternoService service;
 
     @Test
-    void enviarEmail_deveRetornar200QuandoServiceOK() {
+    void enviarEmail_Retornar200ServiceOK() {
         NovoEmail req = new NovoEmail("fulana@ex.com","Cadastro realizado");
         Email email = new Email(1L, req.email(), req.mensagem(), "ENVIADO");
 
@@ -39,17 +39,15 @@ class ExternoControllerTest {
     }
 
     @Test
-    void enviarEmail_devePropagarNotFound() {
+    void enviarEmail_RetornarNotFound() {
         NovoEmail req = new NovoEmail("naoexiste@ex.com","msg");
-        when(service.enviarEmail(req))
-                .thenThrow(new NotFoundException("E-mail não existe"));
+        when(service.enviarEmail(req)).thenThrow(new NotFoundException("E-mail não existe"));
 
-        assertThrows(NotFoundException.class,
-                () -> controller.enviarEmail(req));
+        assertThrows(NotFoundException.class, () -> controller.enviarEmail(req));
     }
 
     @Test
-    void restaurarBanco_deveRetornar200() {
+    void restaurarBanco_Retornar200() {
         ResponseEntity<String> resp = controller.restaurarBanco();
 
         assertEquals(HttpStatus.OK, resp.getStatusCode());
@@ -59,15 +57,7 @@ class ExternoControllerTest {
 
     @Test
     void pagarCobranca_deveChamarServicoEDevolverCobranca() {
-        Cobranca resp = new Cobranca(
-                30L,
-                "PAGA",
-                Instant.now(),
-                Instant.now(),
-                300L,
-                "ciclistaPago",
-                "pi_pago"
-        );
+        Cobranca resp = new Cobranca(30L, "PAGA", Instant.now(), Instant.now(), 300L, "ciclistaPago", "pi_pago");
 
         when(service.pagarCobranca(30L)).thenReturn(resp);
 

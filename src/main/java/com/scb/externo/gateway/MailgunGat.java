@@ -14,12 +14,13 @@ import com.scb.externo.exception.MailgunException;
 @Component
 public class MailgunGat {
 
+    private final RestTemplate restTemplate = new RestTemplate();
     private static final Logger log = LoggerFactory.getLogger(MailgunGat.class);
 
     @Value("${mailgun.domain:}")
     private String domain;
 
-    @Value("${mailgun.from:postmaster@sandbox3ab49b3919a249fb95a5dff11c46de6e.mailgun.org}")
+    @Value("${mailgun.from:}")
     private String from;
 
     @Value("${mailgun.api.key:}")
@@ -27,19 +28,16 @@ public class MailgunGat {
 
     @PostConstruct
     public void debugConfigs() {
-        // Evita logar a chave inteira – só um prefixo e em nível DEBUG
+        // Evita logar a chave inteira – só um prefixo
         if (log.isDebugEnabled()) {
-            String apiPrefix = (apiKey == null)
-                    ? "null"
-                    : apiKey.substring(0, Math.min(8, apiKey.length()));
+
+            String apiPrefix = (apiKey == null) ? "null" : apiKey.substring(0, Math.min(8, apiKey.length()));
 
             log.debug("Mailgun domain='{}'", domain);
             log.debug("Mailgun from='{}'", from);
             log.debug("Mailgun apiKey prefix='{}...'", apiPrefix);
         }
     }
-
-    private final RestTemplate restTemplate = new RestTemplate();
 
     public void enviarEmailSimples(String para, String assunto, String corpo) {
 
@@ -55,13 +53,10 @@ public class MailgunGat {
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
         headers.setBasicAuth("api", apiKey);
 
-        HttpEntity<MultiValueMap<String, String>> request =
-                new HttpEntity<>(form, headers);
+        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(form, headers);
 
-        ResponseEntity<String> response =
-                restTemplate.postForEntity(url, request, String.class);
+        ResponseEntity<String> response = restTemplate.postForEntity(url, request, String.class);
 
-        // Logs substituindo os System.out
         log.info("Resposta Mailgun: status={}", response.getStatusCode());
         log.debug("Body Mailgun: {}", response.getBody());
 

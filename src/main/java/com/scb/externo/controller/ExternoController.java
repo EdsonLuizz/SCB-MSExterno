@@ -30,6 +30,13 @@ public class ExternoController {
     return ResponseEntity.ok(service.enviarEmail(body));
   }
 
+  //Cobrança
+
+  @PostMapping("/cobranca")
+  public ResponseEntity<Cobranca> postCobranca(@Valid @RequestBody NovaCobranca body) {
+      return ResponseEntity.ok(service.criarCobranca(body));
+  }
+
   @PostMapping("/processaCobrancasEmFila")
   public ResponseEntity<List<Cobranca>> processaCobrancasEmFila() {
     return ResponseEntity.ok(service.processarFila());
@@ -38,13 +45,6 @@ public class ExternoController {
   @PostMapping("/filaCobranca")
   public ResponseEntity<Cobranca> filaCobranca(@Valid @RequestBody NovaCobranca body) {
     return ResponseEntity.ok(service.incluirNaFila(body));
-  }
-
-  //COBRANCA
-
-  @PostMapping("/cobranca")
-  public ResponseEntity<Cobranca> postCobranca(@Valid @RequestBody NovaCobranca body) {
-    return ResponseEntity.ok(service.criarCobranca(body));
   }
 
   @GetMapping("/cobranca/{idCobranca}")
@@ -56,6 +56,16 @@ public class ExternoController {
   public ResponseEntity<Cobranca> pagarCobranca(@PathVariable Long idCobranca) {
     return ResponseEntity.ok(service.pagarCobranca(idCobranca));
   }
+
+  //Endpoint para o UC16
+
+  @PostMapping("/cobranca/fila/processar")
+  public ResponseEntity<List<Cobranca>> processarCobrancasEmFila() {
+      List<Cobranca> atualizadas = service.processarFila();
+      return ResponseEntity.ok(atualizadas);
+  }
+
+  //Cartão de crédito
 
   @PostMapping("/validaCartaoDeCredito")
   public ResponseEntity<Object> validaCartaoDeCredito(@RequestBody @Valid NovoCartaoDeCredito req) {
@@ -69,13 +79,7 @@ public class ExternoController {
                   .body(List.of(erro));
       }
 
-      // se for válido, devolve o próprio JSON como no Swagger
       return ResponseEntity.ok(req);
   }
 
-    @PostMapping("/cobranca/fila/processar")
-    public ResponseEntity<List<Cobranca>> processarCobrancasEmFila() {
-        List<Cobranca> atualizadas = service.processarFila();
-        return ResponseEntity.ok(atualizadas);
-    }
 }

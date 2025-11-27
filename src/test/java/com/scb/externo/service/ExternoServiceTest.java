@@ -34,77 +34,58 @@ class ExternoServiceTest {
         PaymentIntent piCriacao = Mockito.mock(PaymentIntent.class);
         when(piCriacao.getId()).thenReturn("pi_test_123");
 
-        when(gatewayMock.criarIntencaoDePagamento(anyLong(), anyString()))
-                .thenReturn(piCriacao);
+        when(gatewayMock.criarIntencaoDePagamento(anyLong(), anyString())).thenReturn(piCriacao);
 
         // Mock da confirmação
         PaymentIntent piConfirmado = Mockito.mock(PaymentIntent.class);
         when(piConfirmado.getStatus()).thenReturn("succeeded");
-        // IMPORTANTE: definir o id também
+
+        //Definindo ID
         when(piConfirmado.getId()).thenReturn("pi_test_123");
 
-        when(gatewayMock.confirmarPaymentIntentComCartaoTeste(anyString()))
-                .thenReturn(piConfirmado);
+        when(gatewayMock.confirmaIntencaoPagamentoComCartaoTeste(anyString())).thenReturn(piConfirmado);
 
         service = new ExternoService(gatewayMock, mailgunGat);
         service.restaurarBanco();
     }
 
     @Test
-    void enviarEmail_deveLancarIllegalArgumentQuandoEmailInvalido() {
+    void enviarEmail_LancaIllegalArgument() {
         NovoEmail req = new NovoEmail("invalido", "mensagem");
 
-        assertThrows(IllegalArgumentException.class,
-                () -> service.enviarEmail(req));
+        assertThrows(IllegalArgumentException.class, () -> service.enviarEmail(req));
         verifyNoInteractions(mailgunGat);
     }
 
     @Test
-    void enviarEmail_deveLancarNotFoundQuandoEmailNaoExiste() {
+    void enviarEmail_LancaNotFound() {
         String emailNaoExiste = "naoexiste@gmail.com";
         NovoEmail req = new NovoEmail(emailNaoExiste, "mensagem");
 
-        doThrow(new NotFoundException("E-mail não existe"))
-                .when(mailgunGat)
-                .enviarEmailSimples(
-                        eq(emailNaoExiste),
-                        anyString(),
-                        eq("mensagem")
-                );
+        doThrow(new NotFoundException("E-mail não existe")).when(mailgunGat).enviarEmailSimples(eq(emailNaoExiste), anyString(), eq("mensagem"));
 
-        assertThrows(NotFoundException.class,
-                () -> service.enviarEmail(req));
+        assertThrows(NotFoundException.class, () -> service.enviarEmail(req));
 
-        verify(mailgunGat).enviarEmailSimples(
-                emailNaoExiste,
-                "SCB - Notificação",
-                "mensagem"
-        );
+        verify(mailgunGat).enviarEmailSimples(emailNaoExiste, "SCB - Notificação", "mensagem");
     }
 
     @Test
-    void enviarEmail_deveRetornarEmailQuandoDadosValidos() {
+    void enviarEmail_RetornaEmail() {
         NovoEmail req = new NovoEmail("edson_teste@gmail.com", "mensagem");
 
         // não faz nada quando o service chamar o Mailgun
-        doNothing()
-                .when(mailgunGat)
-                .enviarEmailSimples(anyString(), anyString(), anyString());
+        doNothing().when(mailgunGat).enviarEmailSimples(anyString(), anyString(), anyString());
 
         Email email = service.enviarEmail(req);
 
         assertNotNull(email);
         assertEquals("edson_teste@gmail.com", email.email());
 
-        verify(mailgunGat).enviarEmailSimples(
-                "edson_teste@gmail.com",
-                "SCB - Notificação",
-                "mensagem"
-        );
+        verify(mailgunGat).enviarEmailSimples("edson_teste@gmail.com", "SCB - Notificação", "mensagem");
     }
 
     @Test
-    void criarCobranca_deveCriarCobrancaComStatusSolicitada() {
+    void criarCobrancaComStatusSolicitacao() {
         NovaCobranca req = new NovaCobranca("ciclista", 1L);
 
         Cobranca c = service.criarCobranca(req);
@@ -114,7 +95,7 @@ class ExternoServiceTest {
     }
 
     @Test
-    void obterCobranca_deveRetornarQuandoExiste() {
+    void obterCobranca_RetornaQuandoExiste() {
         NovaCobranca req = new NovaCobranca("ciclista", 1L);
         Cobranca criada = service.criarCobranca(req);
 
@@ -125,13 +106,11 @@ class ExternoServiceTest {
 
     @Test
     void obterCobranca_deveLancarNotFoundQuandoNaoExiste() {
-        assertThrows(NotFoundException.class,
-                () -> service.obterCobranca(999L));
+        assertThrows(NotFoundException.class, () -> service.obterCobranca(999L));
     }
 
     @Test
     void validaNumero_deveRetornarTrueParaNumeroValido() {
-        // número válido pelo algoritmo de Luhn
         assertTrue(service.validaNumero("79927398713"));
     }
 
@@ -146,14 +125,13 @@ class ExternoServiceTest {
     }
 
     @Test
-    void marcarComoPagoPorGatewayId_deveAtualizarStatusParaPaga() {
+    void marcarComoPagoPorGatewayId() {
         NovaCobranca req = new NovaCobranca("ciclista", 10L);
         Cobranca criada = service.criarCobranca(req);
 
         // garante pré-condição
         assertEquals("AGUARDANDO_PAGAMENTO", criada.status());
 
-        // chama o método novo
         service.marcarComoPagoPorGatewayId(criada.gatewayID());
 
         Cobranca atualizada = service.obterCobranca(criada.id());
@@ -176,18 +154,17 @@ class ExternoServiceTest {
 
     @Test
     void restaurarBanco() {
-        // arrange: cria duas cobranças
+
         NovaCobranca req1 = new NovaCobranca("ciclista1", 100L);
         NovaCobranca req2 = new NovaCobranca("ciclista2", 200L);
 
         Cobranca c1 = service.criarCobranca(req1);
         Cobranca c2 = service.criarCobranca(req2);
 
-        // sanity check
+
         assertNotNull(service.obterCobranca(c1.id()));
         assertNotNull(service.obterCobranca(c2.id()));
 
-        // act
         service.restaurarBanco();
 
         boolean lancouC1 = false;
@@ -216,31 +193,25 @@ class ExternoServiceTest {
 
         assertNotNull(c.id());
         assertEquals("ciclistaFila", c.ciclista());
-        // ajuste de acordo com o status que você definiu no método
-        // ex.: "EM_FILA" ou "FALHA_GATEWAY"
         assertEquals("EM_FILA", c.status());
     }
 
     @Test
     void pagarCobranca_alterandoHorariaFinalizacao() {
-        // arrange
+
         NovaCobranca req = new NovaCobranca("ciclista", 150L);
         Cobranca criada = service.criarCobranca(req);
 
-        // sanity check (opcional)
         assertEquals("AGUARDANDO_PAGAMENTO", criada.status());
 
-        // act
         Cobranca paga = service.pagarCobranca(criada.id());
 
-        // assert
         assertEquals("PAGA", paga.status());
         assertNotNull(paga.horaFinalizacao());
     }
 
     @Test
     void processarFila_quandoNaoHaCobrancasEmFila_deveRetornarListaVazia() {
-        // não chamo incluirNaFila, então não existe nenhuma cobrança EM_FILA
 
         var atualizadas = service.processarFila();
 
@@ -250,15 +221,13 @@ class ExternoServiceTest {
 
     @Test
     void processarFila_quandoHaUmaCobrancaEmFila_deveAtualizarStatusEGateway() {
-        // arrange: cria uma cobrança EM_FILA
+
         NovaCobranca req = new NovaCobranca("ciclistaFila", 500L);
         Cobranca emFila = service.incluirNaFila(req);
         assertEquals("EM_FILA", emFila.status());
 
-        // act
         var atualizadas = service.processarFila();
 
-        // assert
         assertEquals(1, atualizadas.size());
         Cobranca processada = atualizadas.get(0);
 
@@ -271,8 +240,7 @@ class ExternoServiceTest {
 
     @Test
     void pagarCobranca_quandoIdNaoExiste_deveLancarNotFound() {
-        assertThrows(NotFoundException.class,
-                () -> service.pagarCobranca(9999L));
+        assertThrows(NotFoundException.class, () -> service.pagarCobranca(9999L));
     }
 
     @Test
@@ -294,23 +262,14 @@ class ExternoServiceTest {
 
     @Test
     void pagarCobranca_deveLancarIllegalStateQuandoNaoTemGatewayId() throws NoSuchFieldException, IllegalAccessException {
-        // arrange: cria cobrança manualmente, sem gatewayID
+
         NovaCobranca req = new NovaCobranca("semGateway", 100L);
         Cobranca c = service.criarCobranca(req);
 
-        // "anula" o gatewayID pra simular uma cobrança pendente sem PaymentIntent
-        Cobranca semGateway = new Cobranca(
-                c.id(),
-                c.status(),
-                c.horaSolicitacao(),
-                c.horaFinalizacao(),
-                c.valor(),
-                c.ciclista(),
-                null        // gatewayID nulo
-        );
+        Cobranca semGateway = new Cobranca(c.id(), c.status(), c.horaSolicitacao(), c.horaFinalizacao(), c.valor(), c.ciclista(), null);
+
         // sobrescreve no "banco" em memória
-        var campoCobrancas = ExternoService.class
-                .getDeclaredField("cobrancas");
+        var campoCobrancas = ExternoService.class.getDeclaredField("cobrancas");
         campoCobrancas.setAccessible(true);
         @SuppressWarnings("unchecked")
         Map<Long, Cobranca> mapa = (Map<Long, Cobranca>) campoCobrancas.get(service);
@@ -337,20 +296,17 @@ class ExternoServiceTest {
 
     @Test
     void criarCobranca_quandoStripeLancaExcecao_deveMarcarFalhaGateway() throws StripeException {
-        // arrange: fazer o mock lançar StripeException
+
         Mockito.reset(gatewayMock);
 
         StripeException erroStripe = Mockito.mock(StripeException.class);
 
-        Mockito.when(gatewayMock.criarIntencaoDePagamento(anyLong(), anyString()))
-                .thenThrow(erroStripe);
+        Mockito.when(gatewayMock.criarIntencaoDePagamento(anyLong(), anyString())).thenThrow(erroStripe);
 
         NovaCobranca req = new NovaCobranca("ciclistaErro", 123L);
 
-        // act
         Cobranca c = service.criarCobranca(req);
 
-        // assert
         assertEquals("FALHA_GATEWAY", c.status());
         assertNotNull(c.horaFinalizacao());
         assertNull(c.gatewayID());
@@ -358,11 +314,10 @@ class ExternoServiceTest {
 
     @Test
     void enviarEmail_deveLancarIllegalArgumentQuandoDominioNaoPermitido() {
-        // e-mail com formato válido, mas domínio não permitido
+
         NovoEmail req = new NovoEmail("usuario@yahoo.com", "mensagem");
 
-        assertThrows(IllegalArgumentException.class,
-                () -> service.enviarEmail(req));
+        assertThrows(IllegalArgumentException.class, () -> service.enviarEmail(req));
 
         // garante que o Mailgun nem foi chamado
         verifyNoInteractions(mailgunGat);
@@ -370,41 +325,33 @@ class ExternoServiceTest {
 
     @Test
     void processarFila_quandoStripeLancaExcecao_deveMarcarComoFalhaGateway() throws StripeException {
-        // arrange: cria cobrança "EM_FILA"
+
         NovaCobranca req = new NovaCobranca("ciclistaFilaErro", 123L);
         Cobranca emFila = service.incluirNaFila(req);
 
-        // para esse teste, fazemos o gateway lançar exceção
         StripeException stripeEx = Mockito.mock(StripeException.class);
-        when(gatewayMock.criarIntencaoDePagamento(anyLong(), anyString()))
-                .thenThrow(stripeEx);
+        when(gatewayMock.criarIntencaoDePagamento(anyLong(), anyString())).thenThrow(stripeEx);
 
-        // act
         var atualizadas = service.processarFila();
 
-        // assert
         assertEquals(1, atualizadas.size());
         Cobranca result = atualizadas.get(0);
 
         assertEquals(emFila.id(), result.id());
-        // aqui uso startsWith para não brigar com "FALHA_GATEWAY" vs "FALHA GATAWAY"
         assertTrue(result.status().startsWith("FALHA"));
         assertNotNull(result.horaFinalizacao());
     }
 
     @Test
     void marcarComoFalhaPorGatewayId_quandoExisteCobranca_deveAtualizarStatus() {
-        // arrange: cria cobrança que já gera um gatewayID
+
         NovaCobranca req = new NovaCobranca("ciclistaFalha", 500L);
         Cobranca aguardando = service.criarCobranca(req);
 
-        // sanity check
         assertNotNull(aguardando.gatewayID());
 
-        // act
         service.marcarComoFalhaPorGatewayId(aguardando.gatewayID());
 
-        // assert
         Cobranca atualizada = service.obterCobranca(aguardando.id());
         assertEquals("FALHA", atualizada.status());
         assertNotNull(atualizada.horaFinalizacao());
@@ -412,7 +359,7 @@ class ExternoServiceTest {
 
     @Test
     void pagarCobranca_quandoNaoTemGatewayId_deveLancarIllegalState() {
-        // arrange: incluirNaFila cria cobrança com gatewayID == null
+
         NovaCobranca req = new NovaCobranca("semGateway", 200L);
         Cobranca emFila = service.incluirNaFila(req);
 
@@ -427,19 +374,17 @@ class ExternoServiceTest {
 
     @Test
     void pagarCobranca_quandoStripeLancaExcecao_deveMarcarComoFalhaGateway() throws StripeException {
+
         // arrange: cria cobrança com gatewayID preenchido
         NovaCobranca req = new NovaCobranca("ciclistaStripeErro", 300L);
         Cobranca aguardando = service.criarCobranca(req);
 
         // para esse teste, confirmarPaymentIntentComCartaoTeste lança StripeException
         StripeException stripeEx = Mockito.mock(StripeException.class);
-        when(gatewayMock.confirmarPaymentIntentComCartaoTeste(anyString()))
-                .thenThrow(stripeEx);
+        when(gatewayMock.confirmaIntencaoPagamentoComCartaoTeste(anyString())).thenThrow(stripeEx);
 
-        // act
         Cobranca resultado = service.pagarCobranca(aguardando.id());
 
-        // assert
         assertTrue(resultado.status().startsWith("FALHA"));
         assertNotNull(resultado.horaFinalizacao());
     }
@@ -449,7 +394,6 @@ class ExternoServiceTest {
         NovaCobranca req = new NovaCobranca("ciclistaFalha", 500L);
         Cobranca criada = service.criarCobranca(req);
 
-        // sanity check
         assertEquals("AGUARDANDO_PAGAMENTO", criada.status());
 
         service.marcarComoFalhaPorGatewayId(criada.gatewayID());
@@ -461,32 +405,20 @@ class ExternoServiceTest {
 
     @Test
     void processarFila_quandoCobrancaJaFalha_deveTentarNovamenteEAprovar() throws Exception {
-        // arrange: cria cobrança EM_FILA
+
         NovaCobranca req = new NovaCobranca("ciclistaFalhaRetentativa", 500L);
         Cobranca emFila = service.incluirNaFila(req);
 
-        // força o status inicial para FALHA (simula tentativa anterior que deu erro)
         var campoCobrancas = ExternoService.class.getDeclaredField("cobrancas");
         campoCobrancas.setAccessible(true);
         @SuppressWarnings("unchecked")
-        Map<Long, Cobranca> mapa =
-                (Map<Long, Cobranca>) campoCobrancas.get(service);
+        Map<Long, Cobranca> mapa = (Map<Long, Cobranca>) campoCobrancas.get(service);
 
-        Cobranca falhaAnterior = new Cobranca(
-                emFila.id(),
-                "FALHA",
-                emFila.horaSolicitacao(),
-                emFila.horaFinalizacao(),
-                emFila.valor(),
-                emFila.ciclista(),
-                emFila.gatewayID()
-        );
+        Cobranca falhaAnterior = new Cobranca(emFila.id(), "FALHA", emFila.horaSolicitacao(), emFila.horaFinalizacao(), emFila.valor(), emFila.ciclista(), emFila.gatewayID());
         mapa.put(emFila.id(), falhaAnterior);
 
-        // act
         var atualizadas = service.processarFila();
 
-        // assert: retentativa bem-sucedida marca como PAGA
         assertEquals(1, atualizadas.size());
         Cobranca atualizada = atualizadas.get(0);
         assertEquals("PAGA", atualizada.status());
@@ -496,20 +428,17 @@ class ExternoServiceTest {
 
     @Test
     void processarFila_quandoStripeRetornaRequiresPaymentMethod_deveMarcarFalha() throws StripeException {
-        // arrange: status específico da Stripe mapeado para FALHA
+
         PaymentIntent piFalha = Mockito.mock(PaymentIntent.class);
         when(piFalha.getStatus()).thenReturn("requires_payment_method");
         when(piFalha.getId()).thenReturn("pi_req_123");
-        when(gatewayMock.confirmarPaymentIntentComCartaoTeste(anyString()))
-                .thenReturn(piFalha);
+        when(gatewayMock.confirmaIntencaoPagamentoComCartaoTeste(anyString())).thenReturn(piFalha);
 
         NovaCobranca req = new NovaCobranca("ciclistaFalhaStatus", 600L);
         service.incluirNaFila(req);
 
-        // act
         var atualizadas = service.processarFila();
 
-        // assert
         assertEquals(1, atualizadas.size());
         Cobranca result = atualizadas.get(0);
         assertEquals("FALHA", result.status());
@@ -519,36 +448,28 @@ class ExternoServiceTest {
 
     @Test
     void processarFila_quandoPagamentoSucessoECiclistaEhEmailValido_deveEnviarEmail() {
-        // arrange: ciclista contém '@', logo é tratado como e-mail
+
         NovaCobranca req = new NovaCobranca("cliente@teste.com", 800L);
         service.incluirNaFila(req);
 
         // zera interações anteriores com o Mailgun
         Mockito.clearInvocations(mailgunGat);
 
-        // act
         service.processarFila();
 
-        // assert: e-mail enviado uma vez
-        verify(mailgunGat, times(1)).enviarEmailSimples(
-                eq("cliente@teste.com"),
-                eq("SCB - Cobrança em atraso paga"),
-                contains("ID da transação")
-        );
+        verify(mailgunGat, times(1)).enviarEmailSimples(eq("cliente@teste.com"), eq("SCB - Cobrança em atraso paga"), contains("ID da transação"));
     }
 
     @Test
     void processarFila_quandoPagamentoSucessoMasCiclistaNaoEhEmail_naoEnviaEmail() {
-        // arrange: ciclista sem '@' => não é e-mail
+
         NovaCobranca req = new NovaCobranca("ciclistaSemEmail", 900L);
         service.incluirNaFila(req);
 
         Mockito.clearInvocations(mailgunGat);
 
-        // act
         service.processarFila();
 
-        // assert: nenhum envio de e-mail é realizado
         verifyNoInteractions(mailgunGat);
     }
 

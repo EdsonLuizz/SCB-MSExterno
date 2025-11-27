@@ -16,11 +16,11 @@ public class StripeConfig {
         if (apiKey == null || apiKey.isBlank()) {
             return;
         }
-        configurarStripe(apiKey);  // método static
+        AlteracampoStripe(apiKey);  // método static
     }
 
-    // método estático para alterar o campo estático da Stripe
-    static void configurarStripe(String apiKey) {
+    // método alterar o campo estático da Stripe
+    static void AlteracampoStripe(String apiKey) {
         Stripe.apiKey = apiKey;
     }
 }

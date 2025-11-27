@@ -15,29 +15,24 @@ import static org.mockito.Mockito.*;
 class StripeGatTest {
 
     @Test
-    void criarIntencaoDePagamento_deveDelegarParaPaymentIntentCreate() throws StripeException {
+    void criarIntencaoDePagamentoParaPaymentIntentCreate() throws StripeException {
         StripeGat gat = new StripeGat();
 
         PaymentIntent piMock = mock(PaymentIntent.class);
 
-        try (MockedStatic<PaymentIntent> paymentIntent =
-                     Mockito.mockStatic(PaymentIntent.class)) {
+        try (MockedStatic<PaymentIntent> paymentIntent = Mockito.mockStatic(PaymentIntent.class)) {
 
-            paymentIntent.when(() -> PaymentIntent.create(any(PaymentIntentCreateParams.class)))
-                    .thenReturn(piMock);
+            paymentIntent.when(() -> PaymentIntent.create(any(PaymentIntentCreateParams.class))).thenReturn(piMock);
 
-            PaymentIntent retorno =
-                    gat.criarIntencaoDePagamento(1234L, "descricao");
+            PaymentIntent retorno = gat.criarIntencaoDePagamento(1234L, "descricao");
 
             // garante que chamou o create e retornou o mesmo objeto
-            paymentIntent.verify(
-                    () -> PaymentIntent.create(any(PaymentIntentCreateParams.class)));
-            assertSame(piMock, retorno);
+            paymentIntent.verify(() -> PaymentIntent.create(any(PaymentIntentCreateParams.class)));assertSame(piMock, retorno);
         }
     }
 
     @Test
-    void confirmarPaymentIntentComCartaoTeste_deveConfirmarEDevolverResultado() throws StripeException {
+    void confirmarIntencaoDePagamentoComCartaoTeste() throws StripeException {
         StripeGat gat = new StripeGat();
 
         PaymentIntent piOriginal = mock(PaymentIntent.class);
@@ -53,7 +48,7 @@ class StripeGatTest {
                     .thenReturn(piOriginal);
 
             PaymentIntent retorno =
-                    gat.confirmarPaymentIntentComCartaoTeste("pi_test_123");
+                    gat.confirmaIntencaoPagamentoComCartaoTeste("pi_test_123");
 
             paymentIntent.verify(() -> PaymentIntent.retrieve("pi_test_123"));
             verify(piOriginal).confirm(any(PaymentIntentConfirmParams.class));

@@ -25,25 +25,20 @@ class ApiExceptionHandlerTest {
     }
 
     @Test
-    void onValidation_deveRetornar422ComListaDeErros() throws Exception {
+    void Validacao_Retorna422ComListaDeErros() throws Exception {
         Object target = new Object();
-        BeanPropertyBindingResult bindingResult =
-                new BeanPropertyBindingResult(target, "target");
+        BeanPropertyBindingResult bindingResult = new BeanPropertyBindingResult(target, "target");
 
-        bindingResult.addError(
-                new FieldError("target", "campo", "mensagem de erro")
-        );
+        bindingResult.addError(new FieldError("target", "campo", "mensagem de erro"));
 
         Method method = this.getClass().getDeclaredMethod("dummy", String.class);
         MethodParameter methodParameter = new MethodParameter(method, 0);
 
-        MethodArgumentNotValidException ex =
-                new MethodArgumentNotValidException(methodParameter, bindingResult);
+        MethodArgumentNotValidException ex = new MethodArgumentNotValidException(methodParameter, bindingResult);
 
         MockHttpServletRequest request = new MockHttpServletRequest();
-        // se você quer testar o comportamento "normal" (lista de erros),
-        // use uma URL diferente de /cobranca
-        request.setRequestURI("/qualquer-coisa");
+
+        request.setRequestURI("/teste"); //URL diferente de /cobranca para testar o comportamento do método
 
         ResponseEntity<List<Erro>> resp = handler.onValidation(ex, request);
 
@@ -53,7 +48,7 @@ class ApiExceptionHandlerTest {
     }
 
     @Test
-    void onNotFound_deveRetornar404() {
+    void NotFound_Retornar404() {
         NotFoundException ex = new NotFoundException("não encontrado");
 
         ResponseEntity<Erro> resp = handler.onNotFound(ex);
@@ -63,16 +58,14 @@ class ApiExceptionHandlerTest {
     }
 
     @Test
-    void onValidation_quandoPostEmCobranca_deveRetornarMensagemGenerica() throws Exception {
+    void Validacao_PostCobranca_RetornaMensagemGenerica() throws Exception {
         Object target = new Object();
-        BeanPropertyBindingResult binding =
-                new BeanPropertyBindingResult(target, "target");
+        BeanPropertyBindingResult binding = new BeanPropertyBindingResult(target, "target");
         binding.addError(new FieldError("target", "valor", "mensagem"));
 
         Method m = this.getClass().getDeclaredMethod("dummy", String.class);
         MethodParameter mp = new MethodParameter(m, 0);
-        MethodArgumentNotValidException ex =
-                new MethodArgumentNotValidException(mp, binding);
+        MethodArgumentNotValidException ex = new MethodArgumentNotValidException(mp, binding);
 
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.setMethod("POST");
@@ -87,17 +80,15 @@ class ApiExceptionHandlerTest {
     }
 
     @Test
-    void onValidation_quandoPostEmFilaCobranca_deveRetornarMensagemGenerica() throws Exception {
-        // igual ao anterior, só troca a URI
+    void Validacao_PostEmFilaCobranca_RetornaMensagemGenerica() throws Exception {
+
         Object target = new Object();
-        BeanPropertyBindingResult binding =
-                new BeanPropertyBindingResult(target, "target");
+        BeanPropertyBindingResult binding = new BeanPropertyBindingResult(target, "target");
         binding.addError(new FieldError("target", "valor", "mensagem"));
 
         Method m = this.getClass().getDeclaredMethod("dummy", String.class);
         MethodParameter mp = new MethodParameter(m, 0);
-        MethodArgumentNotValidException ex =
-                new MethodArgumentNotValidException(mp, binding);
+        MethodArgumentNotValidException ex = new MethodArgumentNotValidException(mp, binding);
 
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.setMethod("POST");
@@ -110,7 +101,8 @@ class ApiExceptionHandlerTest {
     }
 
     @Test
-    void onIllegalArgument_deveRetornar422ComMensagem() {
+    void IllegalArgument_Retorna422ComMensagem() {
+
         IllegalArgumentException ex = new IllegalArgumentException("erro de negócio");
 
         ResponseEntity<List<Erro>> resp = handler.onIllegalArgument(ex);
@@ -122,19 +114,17 @@ class ApiExceptionHandlerTest {
     }
 
     @Test
-    void onValidation_quandoPostCobrancaOuFila_deveRetornarErroPadrao() throws Exception {
+    void Validacao_PostCobrancaOuFila_RetornaErroPadrao() throws Exception {
+
         Object target = new Object();
-        BeanPropertyBindingResult bindingResult =
-                new BeanPropertyBindingResult(target, "target");
+        BeanPropertyBindingResult bindingResult = new BeanPropertyBindingResult(target, "target");
         bindingResult.addError(new FieldError("target", "campo", "mensagem qualquer"));
 
         Method method = this.getClass().getDeclaredMethod("dummy", String.class);
         MethodParameter methodParameter = new MethodParameter(method, 0);
 
-        MethodArgumentNotValidException ex =
-                new MethodArgumentNotValidException(methodParameter, bindingResult);
+        MethodArgumentNotValidException ex = new MethodArgumentNotValidException(methodParameter, bindingResult);
 
-        // POST /cobranca
         MockHttpServletRequest reqCobranca = new MockHttpServletRequest("POST", "/cobranca");
         var respCobranca = handler.onValidation(ex, reqCobranca);
 
@@ -145,7 +135,6 @@ class ApiExceptionHandlerTest {
         assertEquals("422", erroCobranca.codigo());
         assertEquals("Dados Inválidos", erroCobranca.mensagem());
 
-        // POST /filaCobranca
         MockHttpServletRequest reqFila = new MockHttpServletRequest("POST", "/filaCobranca");
         var respFila = handler.onValidation(ex, reqFila);
 

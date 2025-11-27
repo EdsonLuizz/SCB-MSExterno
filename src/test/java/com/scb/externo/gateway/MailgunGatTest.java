@@ -14,43 +14,29 @@ import static org.mockito.Mockito.*;
 class MailgunGatTest {
 
     @Test
-    void enviarEmailSimples_quandoApiKeyNull_deveLancarIllegalArgument() {
+    void enviarEmail_LancarIllegalArgument_ApiKeyNull() {
         MailgunGat gat = new MailgunGat();
 
-        // domain válido, apiKey continua null
         ReflectionTestUtils.setField(gat, "domain", "sandbox.mailgun.org");
 
-        assertThrows(IllegalArgumentException.class, () ->
-                gat.enviarEmailSimples("destino@teste.com", "Assunto", "Mensagem")
-        );
+        assertThrows(IllegalArgumentException.class, () -> gat.enviarEmailSimples("destino@teste.com", "Assunto", "Mensagem"));
     }
 
     @Test
-    void enviarEmailSimples_quandoTudoOk_deveChamarRestTemplate() {
+    void enviarEmail_ChamarRestTemplate_Ok() {
         MailgunGat gat = new MailgunGat();
+
 
         RestTemplate rtMock = mock(RestTemplate.class);
         ReflectionTestUtils.setField(gat, "restTemplate", rtMock);
         ReflectionTestUtils.setField(gat, "domain", "sandbox.mailgun.org");
         ReflectionTestUtils.setField(gat, "apiKey", "chave-fake");
 
-        // STUB para o método que o código realmente usa: postForEntity
-        when(rtMock.postForEntity(
-                anyString(),
-                any(HttpEntity.class),
-                eq(String.class)
-        )).thenReturn(new ResponseEntity<>("OK", HttpStatus.ACCEPTED));
+        // STUB
+        when(rtMock.postForEntity(anyString(), any(HttpEntity.class), eq(String.class))).thenReturn(new ResponseEntity<>("OK", HttpStatus.ACCEPTED));
 
-        // não deve lançar exceção
-        assertDoesNotThrow(() ->
-                gat.enviarEmailSimples("destino@teste.com", "Assunto", "Mensagem")
-        );
+        assertDoesNotThrow(() -> gat.enviarEmailSimples("destino@teste.com", "Assunto", "Mensagem"));
 
-        // VERIFY também em postForEntity, não em exchange
-        verify(rtMock).postForEntity(
-                contains("sandbox.mailgun.org"),
-                any(HttpEntity.class),
-                eq(String.class)
-        );
+        verify(rtMock).postForEntity(contains("sandbox.mailgun.org"), any(HttpEntity.class), eq(String.class));
     }
 }

@@ -49,7 +49,6 @@
 
     <build>
     <plugins>
-      <!-- Garante bytecode 17 mesmo usando JDK 23 -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
@@ -59,7 +58,6 @@
         </configuration>
       </plugin>
 
-      <!-- JaCoCo compatível com Java 23 -->
       <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>

@@ -9,13 +9,13 @@ public record Cobranca(Long id, String status,
 
                        @JsonFormat (
                                shape = JsonFormat.Shape.STRING,
-                               pattern = "dd-MM-yyyy'T'HH:mm:ssXXX",
+                               pattern = "dd-MM-yyyy'T'HR:mm:ss",
                                timezone = "America/Sao_Paulo"
                        ) Instant horaSolicitacao,
 
                        @JsonFormat(
                                shape = JsonFormat.Shape.STRING,
-                               pattern = "dd-MM-yyyy'T'HH:mm:ssXXX",
+                               pattern = "dd-MM-yyyy'T'HR:mm:ss",
                                timezone = "America/Sao_Paulo"
                        )Instant horaFinalizacao,
 

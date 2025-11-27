@@ -7,7 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class NotFoundExceptionTest {
 
     @Test
-    void deveConterMensagemInformada() {
+    void ConterMensagemInformada() {
         NotFoundException ex = new NotFoundException("mensagem de erro");
         assertEquals("mensagem de erro", ex.getMessage());
     }
