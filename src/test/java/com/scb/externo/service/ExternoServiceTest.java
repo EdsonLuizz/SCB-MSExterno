@@ -278,11 +278,8 @@ class ExternoServiceTest {
 
         var atualizadas = service.processarFila();
 
-        assertEquals(2, atualizadas.size());
-        atualizadas.forEach(c -> {
-            assertEquals("AGUARDANDO_PAGAMENTO", c.status());
-            assertEquals("pi_test_123", c.gatewayID());
-        });
+        atualizadas.forEach(c -> assertEquals("AGUARDANDO_PAGAMENTO", c.status()));
+        atualizadas.forEach(c -> assertEquals("pi_test_123", c.gatewayID()));
     }
 
     @Test

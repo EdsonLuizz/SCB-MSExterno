@@ -9,6 +9,7 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.scb.externo.exception.MailgunException;
 
 @Component
 public class MailgunGat {
@@ -65,8 +66,7 @@ public class MailgunGat {
         log.debug("Body Mailgun: {}", response.getBody());
 
         if (!response.getStatusCode().is2xxSuccessful()) {
-            // aqui você pode criar uma MailgunException se quiser algo mais específico
-            throw new RuntimeException("Erro ao enviar e-mail via Mailgun: " + response);
+            throw new MailgunException("Erro ao enviar e-mail via Mailgun: " + response);
         }
     }
 }

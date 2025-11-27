@@ -8,6 +8,7 @@ C:\Users\USER\Documents\SCB-MSExterno\src\main\java\com\scb\externo\dto\NovaCobr
 C:\Users\USER\Documents\SCB-MSExterno\src\main\java\com\scb\externo\dto\NovoCartaoDeCredito.java
 C:\Users\USER\Documents\SCB-MSExterno\src\main\java\com\scb\externo\dto\NovoEmail.java
 C:\Users\USER\Documents\SCB-MSExterno\src\main\java\com\scb\externo\exception\ApiExceptionHandler.java
+C:\Users\USER\Documents\SCB-MSExterno\src\main\java\com\scb\externo\exception\MailgunException.java
 C:\Users\USER\Documents\SCB-MSExterno\src\main\java\com\scb\externo\exception\NotFoundException.java
 C:\Users\USER\Documents\SCB-MSExterno\src\main\java\com\scb\externo\ExternoApplication.java
 C:\Users\USER\Documents\SCB-MSExterno\src\main\java\com\scb\externo\gateway\MailgunGat.java

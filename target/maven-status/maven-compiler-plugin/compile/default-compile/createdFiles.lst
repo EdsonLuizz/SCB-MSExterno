@@ -1,5 +1,6 @@
 com\scb\externo\dto\NovoEmail.class
 com\scb\externo\ExternoApplication.class
+com\scb\externo\exception\MailgunException.class
 com\scb\externo\controller\StripeController.class
 com\scb\externo\controller\ExternoController.class
 com\scb\externo\dto\Cobranca.class
