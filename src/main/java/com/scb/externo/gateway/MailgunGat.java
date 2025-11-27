@@ -7,9 +7,13 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Component
 public class MailgunGat {
+
+    private static final Logger log = LoggerFactory.getLogger(MailgunGat.class);
 
     @Value("${mailgun.domain:}")
     private String domain;
@@ -22,10 +26,16 @@ public class MailgunGat {
 
     @PostConstruct
     public void debugConfigs() {
-        System.out.println("Mailgun domain = '" + domain + "'");
-        System.out.println("Mailgun from   = '" + from + "'");
-        System.out.println("Mailgun apiKey prefix = '" +
-                (apiKey == null ? "null" : apiKey.substring(0, Math.min(8, apiKey.length()))) + "...'");
+        // Evita logar a chave inteira – só um prefixo e em nível DEBUG
+        if (log.isDebugEnabled()) {
+            String apiPrefix = (apiKey == null)
+                    ? "null"
+                    : apiKey.substring(0, Math.min(8, apiKey.length()));
+
+            log.debug("Mailgun domain='{}'", domain);
+            log.debug("Mailgun from='{}'", from);
+            log.debug("Mailgun apiKey prefix='{}...'", apiPrefix);
+        }
     }
 
     private final RestTemplate restTemplate = new RestTemplate();
@@ -34,7 +44,6 @@ public class MailgunGat {
 
         String url = "https://api.mailgun.net/v3/" + domain + "/messages";
 
-        // de x para que o Mailgun espera
         MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
         form.add("from", from);
         form.add("to", para);
@@ -43,22 +52,20 @@ public class MailgunGat {
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-
-        // auth básica: usuário "api" + apiKey
         headers.setBasicAuth("api", apiKey);
 
         HttpEntity<MultiValueMap<String, String>> request =
                 new HttpEntity<>(form, headers);
 
-        // dispara requisição
-        ResponseEntity<String> response = restTemplate.postForEntity(url, request, String.class);
+        ResponseEntity<String> response =
+                restTemplate.postForEntity(url, request, String.class);
 
-        //testar enventuais erros no mailgun
-        System.out.println("Resposta Mailgun: " + response.getStatusCode());
-        System.out.println("Body Mailgun: " + response.getBody());
+        // Logs substituindo os System.out
+        log.info("Resposta Mailgun: status={}", response.getStatusCode());
+        log.debug("Body Mailgun: {}", response.getBody());
 
-        //chec o status e logar/lançar exceção
         if (!response.getStatusCode().is2xxSuccessful()) {
+            // aqui você pode criar uma MailgunException se quiser algo mais específico
             throw new RuntimeException("Erro ao enviar e-mail via Mailgun: " + response);
         }
     }

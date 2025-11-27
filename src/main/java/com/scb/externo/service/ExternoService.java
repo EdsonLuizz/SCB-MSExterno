@@ -41,22 +41,6 @@ public class ExternoService {
         seq.set(1);
     }
 
-    private boolean formatoEmailValido(String email) {
-        if (email == null) return false;
-
-        String normalizado = email.trim().toLowerCase();
-
-        if (!normalizado.contains("@")) return false;
-
-        return normalizado.endsWith("@gmail.com")
-                || normalizado.endsWith("@hotmail.com");
-    }
-
-    private boolean emailExiste(String email) {
-        return email.equalsIgnoreCase("edson_junior2002@hotmail.com")
-                || email.equalsIgnoreCase("seu_outro_email@gmail.com");
-    }
-
     public Email enviarEmail(NovoEmail req) {
         String email = req.email();
 

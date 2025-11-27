@@ -5,9 +5,14 @@ import com.stripe.model.PaymentIntent;
 import com.stripe.param.PaymentIntentConfirmParams;
 import com.stripe.param.PaymentIntentCreateParams;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class StripeGat {
+
+    // Corrigido para StripeGat.class
+    private static final Logger log = LoggerFactory.getLogger(StripeGat.class);
 
     public PaymentIntent criarIntencaoDePagamento(long valorEmCentavos, String descricao) throws StripeException {
         PaymentIntentCreateParams params =
@@ -22,16 +27,15 @@ public class StripeGat {
     }
 
     public PaymentIntent confirmarPaymentIntentComCartaoTeste(String paymentIntentId) throws StripeException {
-        //Usei o PaymentMethod de teste já pronto da Stripe
         PaymentIntentConfirmParams confirmParams = PaymentIntentConfirmParams.builder()
-                .setPaymentMethod("pm_card_visa")   // sempre o mesmo “cartão de teste”
+                .setPaymentMethod("pm_card_visa")
                 .build();
 
         PaymentIntent pi = PaymentIntent.retrieve(paymentIntentId);
         PaymentIntent confirmado = pi.confirm(confirmParams);
 
-        System.out.println(">>> PaymentIntent " + confirmado.getId()
-                + " status = " + confirmado.getStatus());
+        // Substitui o System.out por log
+        log.info("PaymentIntent {} confirmado com status={}", confirmado.getId(), confirmado.getStatus());
 
         return confirmado;
     }
