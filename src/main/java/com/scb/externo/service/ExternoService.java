@@ -15,10 +15,13 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class ExternoService {
 
+    private static final Logger log = LoggerFactory.getLogger(ExternoService.class);
     private final AtomicLong seq = new AtomicLong(1);
     private final Map<Long, Cobranca> cobrancas = new ConcurrentHashMap<>();
     private final Queue<NovaCobranca> fila = new ConcurrentLinkedQueue<>();
@@ -140,7 +143,8 @@ public class ExternoService {
             cobrancas.put(id, c);
             return c;
         } catch (StripeException e) {
-            e.printStackTrace();
+            log.error("Erro ao criar PaymentIntent no Stripe para o ciclista {}.",
+                    req.ciclista(), e);
 
             Cobranca c = new Cobranca(
                     id,
