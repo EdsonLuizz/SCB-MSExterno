@@ -193,10 +193,19 @@ class ExternoServiceTest {
         service.restaurarBanco();
 
         // assert: agora qualquer id deve lançar NotFoundException
-        assertThrows(NotFoundException.class,
-                () -> service.obterCobranca(c1.id()));
-        assertThrows(NotFoundException.class,
-                () -> service.obterCobranca(c2.id()));
+        try {
+            service.obterCobranca(c1.id());
+            fail("Era esperado que lançasse NotFoundException para c1");
+        } catch (NotFoundException expected) {
+            // OK
+        }
+
+        try {
+            service.obterCobranca(c2.id());
+            fail("Era esperado que lançasse NotFoundException para c2");
+        } catch (NotFoundException expected) {
+            // OK
+        }
     }
 
     @Test
@@ -308,9 +317,12 @@ class ExternoServiceTest {
         Map<Long, Cobranca> mapa = (Map<Long, Cobranca>) campoCobrancas.get(service);
         mapa.put(c.id(), semGateway);
 
-        // act + assert
-        assertThrows(IllegalStateException.class,
-                () -> service.pagarCobranca(c.id()));
+        try {
+            service.pagarCobranca(c.id());
+            fail("Era esperado que lançasse IllegalStateException");
+        } catch (IllegalStateException expected) {
+            // OK – exceção esperada
+        }
     }
 
     @Test
@@ -404,9 +416,12 @@ class ExternoServiceTest {
         NovaCobranca req = new NovaCobranca("semGateway", 200L);
         Cobranca emFila = service.incluirNaFila(req);
 
-        // act + assert
-        assertThrows(IllegalStateException.class,
-                () -> service.pagarCobranca(emFila.id()));
+        try {
+            service.pagarCobranca(emFila.id());
+            fail("Era esperado que lançasse IllegalStateException");
+        } catch (IllegalStateException expected) {
+            // OK – exceção esperada
+        }
     }
 
     @Test
