@@ -192,20 +192,22 @@ class ExternoServiceTest {
         // act
         service.restaurarBanco();
 
-        // assert: agora qualquer id deve lançar NotFoundException
-        try {
-            service.obterCobranca(c1.id());
-            fail("Era esperado que lançasse NotFoundException para c1");
-        } catch (NotFoundException expected) {
-            // OK
-        }
+        boolean lancouC1 = false;
 
         try {
-            service.obterCobranca(c2.id());
-            fail("Era esperado que lançasse NotFoundException para c2");
+            service.obterCobranca(c1.id());
         } catch (NotFoundException expected) {
-            // OK
+            lancouC1 = true;
         }
+        assertTrue(lancouC1, "Era esperado que lançasse NotFoundException para c1");
+
+        boolean lancouC2 = false;
+        try {
+            service.obterCobranca(c2.id());
+        } catch (NotFoundException expected) {
+            lancouC2 = true;
+        }
+        assertTrue(lancouC2, "Era esperado que lançasse NotFoundException para c2");
     }
 
     @Test
@@ -317,12 +319,13 @@ class ExternoServiceTest {
         Map<Long, Cobranca> mapa = (Map<Long, Cobranca>) campoCobrancas.get(service);
         mapa.put(c.id(), semGateway);
 
+        boolean lancou = false;
         try {
             service.pagarCobranca(c.id());
-            fail("Era esperado que lançasse IllegalStateException");
         } catch (IllegalStateException expected) {
-            // OK – exceção esperada
+            lancou = true;
         }
+        assertTrue(lancou, "Era esperado que lançasse IllegalStateException");
     }
 
     @Test
@@ -416,12 +419,13 @@ class ExternoServiceTest {
         NovaCobranca req = new NovaCobranca("semGateway", 200L);
         Cobranca emFila = service.incluirNaFila(req);
 
+        boolean lancou = false;
         try {
             service.pagarCobranca(emFila.id());
-            fail("Era esperado que lançasse IllegalStateException");
         } catch (IllegalStateException expected) {
-            // OK – exceção esperada
+            lancou = true;
         }
+        assertTrue(lancou, "Era esperado que lançasse IllegalStateException");
     }
 
     @Test
