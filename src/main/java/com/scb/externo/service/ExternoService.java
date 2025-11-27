@@ -279,7 +279,7 @@ public class ExternoService {
                 default -> novoStatus = STATUS_AGUARDANDO_PAGAMENTO;
             }
 
-            Cobranca atualizada = new Cobranca(atual.id(), "PAGA", atual.horaSolicitacao(), Instant.now(), atual.valor(), atual.ciclista(), atual.gatewayID());
+            Cobranca atualizada = new Cobranca(atual.id(), novoStatus, atual.horaSolicitacao(), Instant.now(), atual.valor(), atual.ciclista(), atual.gatewayID());
             cobrancas.put(atual.id(), atualizada);
             return atualizada;
 

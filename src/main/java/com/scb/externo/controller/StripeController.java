@@ -54,6 +54,6 @@ public class StripeController {
 
     private Optional<PaymentIntent> extractPaymentIntent(Event event) {
         EventDataObjectDeserializer deser = event.getDataObjectDeserializer();
-        return deser.getObject().map(obj -> (PaymentIntent) obj);
+        return deser.getObject().map(PaymentIntent.class::cast);
     }
 }
