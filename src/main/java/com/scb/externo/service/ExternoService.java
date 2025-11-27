@@ -201,7 +201,7 @@ public class ExternoService {
         String novoStatus = mapearStatusStripe(statusStripe);
 
         Instant agora = Instant.now();
-        Instant horaFinalizacao = HoraFinalizacao(novoStatus) ? agora : null;
+        Instant horaFinalizacao = horaFinalizacao(novoStatus) ? agora : null;
 
         Cobranca atualizada = new Cobranca(original.id(), novoStatus, original.horaSolicitacao() != null ? original.horaSolicitacao() : agora, horaFinalizacao, original.valor(), original.ciclista(), piConfirmado.getId());
 
@@ -219,7 +219,7 @@ public class ExternoService {
         };
     }
 
-    private boolean HoraFinalizacao(String status) {
+    private boolean horaFinalizacao(String status) {
         return STATUS_PAGA.equals(status) || STATUS_FALHA.equals(status);
     }
 
