@@ -22,6 +22,9 @@ import org.slf4j.LoggerFactory;
 public class ExternoService {
 
     private static final String STATUS_AGUARDANDO_PAGAMENTO = "AGUARDANDO_PAGAMENTO";
+    private static final String STATUS_EM_FILA = "EM_FILA";
+    private static final String STATUS_FALHA = "FALHA";
+    private static final String STATUS_PAGA = "PAGA";
     private static final Logger log = LoggerFactory.getLogger(ExternoService.class);
     private final AtomicLong seq = new AtomicLong(1);
     private final Map<Long, Cobranca> cobrancas = new ConcurrentHashMap<>();
@@ -88,7 +91,7 @@ public class ExternoService {
 
         Cobranca c = new Cobranca(
                 id,                 // id
-                "EM_FILA",          // status
+                STATUS_EM_FILA,          // status
                 agora,              // horaSolicitacao
                 null,               // horaFinalizacao (ainda não concluída)
                 req.valor(),        // valor
@@ -187,7 +190,7 @@ public class ExternoService {
 
         Cobranca atualizada = new Cobranca(
                 original.id(),
-                "PAGA",
+                STATUS_PAGA,
                 original.horaSolicitacao(),
                 Instant.now(),           // horaFinalizacao
                 original.valor(),
@@ -206,18 +209,18 @@ public class ExternoService {
                 .filter(c -> gatewayId.equals(c.gatewayID()))
                 .findFirst()
                 .ifPresent(c -> {
-                    Cobranca atualizada = new Cobranca(c.id(), "FALHA", c.horaSolicitacao(), Instant.now(), c.valor(), c.ciclista(), c.gatewayID());
+                    Cobranca atualizada = new Cobranca(c.id(), STATUS_FALHA, c.horaSolicitacao(), Instant.now(), c.valor(), c.ciclista(), c.gatewayID());
                     cobrancas.put(c.id(), atualizada);
                 });
     }
 
 
-    public List<Cobranca> processarFila() {
+    /*public List<Cobranca> processarFila() {
         List<Cobranca> atualizadas = new ArrayList<>();
 
         cobrancas.values().stream()
                 // UC16 – só pega quem está pendente
-                .filter(c -> "EM_FILA".equals(c.status()) || "FALHA".equals(c.status()))
+                .filter(c -> "EM_FILA".equals(c.status()) || STATUS_FALHA.equals(c.status()))
                 .forEach(c -> {
                     try {
                         // 1) Cria a intenção de pagamento (valor já em centavos)
@@ -244,7 +247,7 @@ public class ExternoService {
 
                         Instant agora = Instant.now();
                         Instant horaFinalizacao =
-                                ("PAGA".equals(novoStatus) || "FALHA".equals(novoStatus))
+                                ("PAGA".equals(novoStatus) || STATUS_FALHA.equals(novoStatus))
                                         ? agora
                                         : null;
 
@@ -286,7 +289,7 @@ public class ExternoService {
                         Instant agora = Instant.now();
                         Cobranca falha = new Cobranca(
                                 c.id(),
-                                "FALHA",
+                                STATUS_FALHA,
                                 c.horaSolicitacao() != null ? c.horaSolicitacao() : agora,
                                 agora,
                                 c.valor(),
@@ -297,6 +300,119 @@ public class ExternoService {
                         atualizadas.add(falha);
                     }
                 });
+
+        return atualizadas;
+    }*/
+
+    private boolean estaPendenteOuFalha(Cobranca c) {
+        return STATUS_EM_FILA.equals(c.status()) || STATUS_FALHA.equals(c.status());
+    }
+
+    private void processarCobrancaDaFila(Cobranca c, List<Cobranca> atualizadas) {
+        try {
+            PaymentIntent piCriado = criarPaymentIntent(c);
+            PaymentIntent piConfirmado =
+                    stripeGateway.confirmarPaymentIntentComCartaoTeste(piCriado.getId());
+
+            tratarRetornoStripe(c, piConfirmado, atualizadas);
+        } catch (StripeException e) {
+            tratarErroProcessamento(c, atualizadas, e);
+        }
+    }
+
+    private PaymentIntent criarPaymentIntent(Cobranca c) throws StripeException {
+        return stripeGateway.criarIntencaoDePagamento(
+                c.valor(),
+                "Cobranca atrasada ciclista " + c.ciclista()
+        );
+    }
+
+    private void tratarRetornoStripe(Cobranca original,
+                                     PaymentIntent piConfirmado,
+                                     List<Cobranca> atualizadas) {
+
+        String statusStripe = piConfirmado.getStatus();
+        String novoStatus = mapearStatusStripe(statusStripe);
+
+        Instant agora = Instant.now();
+        Instant horaFinalizacao = precisaHoraFinalizacao(novoStatus) ? agora : null;
+
+        Cobranca atualizada = new Cobranca(
+                original.id(),
+                novoStatus,
+                original.horaSolicitacao() != null ? original.horaSolicitacao() : agora,
+                horaFinalizacao,
+                original.valor(),
+                original.ciclista(),
+                piConfirmado.getId()
+        );
+
+        cobrancas.put(original.id(), atualizada);
+        atualizadas.add(atualizada);
+
+        notificarEmailSeNecessario(atualizada, piConfirmado.getId());
+    }
+
+    private String mapearStatusStripe(String statusStripe) {
+        return switch (statusStripe) {
+            case "succeeded" -> STATUS_PAGA;
+            case "requires_payment_method", "requires_action", "canceled" -> STATUS_FALHA;
+            default -> STATUS_AGUARDANDO_PAGAMENTO;
+        };
+    }
+
+    private boolean precisaHoraFinalizacao(String status) {
+        return STATUS_PAGA.equals(status) || STATUS_FALHA.equals(status);
+    }
+
+    private void notificarEmailSeNecessario(Cobranca cobranca, String paymentIntentId) {
+        if (!STATUS_PAGA.equals(cobranca.status())) {
+            return;
+        }
+
+        String emailDestino = cobranca.ciclista();
+        if (emailDestino != null && emailDestino.contains("@")) {
+            String assunto = "SCB - Cobrança em atraso paga";
+            String corpo = "Olá, sua cobrança em atraso no valor de "
+                    + cobranca.valor() + " centavos foi paga com sucesso. "
+                    + "ID da transação: " + paymentIntentId + ".";
+
+            mailgunGateway.enviarEmailSimples(emailDestino, assunto, corpo);
+        } else {
+            log.warn(
+                    "Cobrança {} marcada como PAGA, mas ciclista '{}' não é um e-mail válido.",
+                    cobranca.id(), cobranca.ciclista()
+            );
+        }
+    }
+
+    private void tratarErroProcessamento(Cobranca c,
+                                         List<Cobranca> atualizadas,
+                                         StripeException e) {
+        log.error("Erro ao processar cobrança atrasada {} para ciclista {}.",
+                c.id(), c.ciclista(), e);
+
+        Instant agora = Instant.now();
+        Cobranca falha = new Cobranca(
+                c.id(),
+                STATUS_FALHA,
+                c.horaSolicitacao() != null ? c.horaSolicitacao() : agora,
+                agora,
+                c.valor(),
+                c.ciclista(),
+                c.gatewayID()
+        );
+        cobrancas.put(c.id(), falha);
+        atualizadas.add(falha);
+    }
+
+
+    public List<Cobranca> processarFila() {
+        List<Cobranca> atualizadas = new ArrayList<>();
+
+        cobrancas.values().stream()
+                .filter(this::estaPendenteOuFalha)
+                .forEach(c -> processarCobrancaDaFila(c, atualizadas));
 
         return atualizadas;
     }
