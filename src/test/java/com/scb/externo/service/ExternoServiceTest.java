@@ -428,4 +428,20 @@ class ExternoServiceTest {
         assertTrue(resultado.status().startsWith("FALHA"));
         assertNotNull(resultado.horaFinalizacao());
     }
+
+    @Test
+    void marcarComoFalhaPorGatewayId_quandoExisteCobranca_deveAtualizarParaFalha() {
+        NovaCobranca req = new NovaCobranca("ciclistaFalha", 500L);
+        Cobranca criada = service.criarCobranca(req);
+
+        // sanity check
+        assertEquals("AGUARDANDO_PAGAMENTO", criada.status());
+
+        service.marcarComoFalhaPorGatewayId(criada.gatewayID());
+
+        Cobranca atualizada = service.obterCobranca(criada.id());
+        assertEquals("FALHA", atualizada.status());
+        assertNotNull(atualizada.horaFinalizacao());
+    }
+
 }
