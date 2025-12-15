@@ -1,0 +1,29 @@
+# Maven / Java build
+/target/
+*.class
+*.jar
+*.war
+*.ear
+
+# Logs
+*.log
+
+# IntelliJ / IDEs
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+.vscode/
+.settings/
+.classpath
+.project
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets / env files (NUNCA subir)
+.env
+.env.*
+!.env.example
