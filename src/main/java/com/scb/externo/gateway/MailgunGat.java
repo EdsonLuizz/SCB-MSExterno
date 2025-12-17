@@ -17,13 +17,13 @@ public class MailgunGat {
     private final RestTemplate restTemplate = new RestTemplate();
     private static final Logger log = LoggerFactory.getLogger(MailgunGat.class);
 
-    @Value("${mailgun.domain:}")
+    @Value("${scb.mailgun.domain}")
     private String domain;
 
-    @Value("${mailgun.from:}")
+    @Value("${scb.mailgun.from}")
     private String from;
 
-    @Value("${mailgun.api.key:}")
+    @Value("${scb.mailgun.api-key}")
     private String apiKey;
 
     @PostConstruct

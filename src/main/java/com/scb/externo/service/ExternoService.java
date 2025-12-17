@@ -17,6 +17,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.time.YearMonth;
+import java.time.ZoneId;
 
 @Service
 public class ExternoService {
@@ -130,7 +132,19 @@ public class ExternoService {
 
     //método para validação de número de cartão de crédito
 
+    private void validarValidade(YearMonth validade) {
+        if (validade == null) {
+            throw new IllegalArgumentException("Validade é obrigatória (yyyy-MM).");
+        }
+
+        YearMonth agora = YearMonth.now(ZoneId.of("America/Sao_Paulo"));
+        if (validade.isBefore(agora)) {
+            throw new IllegalArgumentException("Cartão expirado (validade " + validade + ")");
+        }
+    }
+
     public boolean validaNumero(String n) {
+
 
         if (n == null || n.isBlank()) {
             return false;
@@ -152,6 +166,9 @@ public class ExternoService {
     }
 
     public boolean validaCartaoLuhn(NovoCartaoDeCredito cartao) {
+        if (cartao == null) return false;
+
+        validarValidade(cartao.validade());
         return validaNumero(cartao.numero());
     }
 

@@ -14,6 +14,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import java.time.YearMonth;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -141,14 +142,14 @@ class ExternoServiceTest {
     @Test
     void validaCartao_deveRetornarTrue() {
         // ajuste os outros parâmetros, se o seu NovoCartaoDeCredito tiver mais campos
-        NovoCartaoDeCredito cartao = new NovoCartaoDeCredito("Edson", "4532015112830366", "09/30","132");
+        NovoCartaoDeCredito cartao = new NovoCartaoDeCredito("Edson", "4532015112830366", YearMonth.of(26,11),"132");
         assertTrue(service.validaCartaoLuhn(cartao));
     }
 
     @Test
     void validaCartao_deveRetornarFalse() {
         // ajuste os outros parâmetros, se o seu NovoCartaoDeCredito tiver mais campos
-        NovoCartaoDeCredito cartao = new NovoCartaoDeCredito("Raul", "1234567890", "18/026", "311");
+        NovoCartaoDeCredito cartao = new NovoCartaoDeCredito("Raul", "1234567890", YearMonth.of(25,11), "311");
         assertFalse(service.validaCartaoLuhn(cartao));
     }
 
