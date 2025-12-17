@@ -20,7 +20,7 @@ public class MailgunGat {
     @Value("${mailgun.domain:}")
     private String domain;
 
-    @Value("${mailgun.from:postmaster@sandbox3ab49b3919a249fb95a5dff11c46de6e.mailgun.org}")
+    @Value("${mailgun.from:}")
     private String from;
 
     @Value("${mailgun.api.key:}")

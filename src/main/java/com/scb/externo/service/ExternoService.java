@@ -47,16 +47,24 @@ public class ExternoService {
     public Email enviarEmail(NovoEmail req) {
         String email = req.email();
 
-        // faz a validação do formato básico do email
-        if (email == null || !email.contains("@")) {
+        if (email == null) {
             throw new IllegalArgumentException("Formato de e-mail inválido");
         }
 
-        // valida domínio permitido (@gmail ou @hotmail)
-        String dominio = email.substring(email.indexOf("@") + 1).toLowerCase();
+        email = email.trim().toLowerCase();
+
+        int at = email.lastIndexOf('@');
+        if (at < 0 || at == email.length() - 1) {
+            throw new IllegalArgumentException("Formato de e-mail inválido");
+        }
+
+        String dominio = email.substring(at + 1); // já está lower/trim
+
         boolean dominioValido =
-                dominio.endsWith("gmail.com") ||
-                        dominio.endsWith("hotmail.com");
+                dominio.equals("gmail.com") ||
+                        dominio.equals("hotmail.com") ||
+                        dominio.equals("unirio.br") ||
+                        dominio.endsWith(".unirio.br"); // aceita edu.unirio.br, aluno.unirio.br, etc.
 
         if (!dominioValido) {
             throw new IllegalArgumentException("Formato de e-mail inválido");
