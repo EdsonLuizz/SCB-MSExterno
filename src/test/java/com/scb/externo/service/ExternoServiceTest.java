@@ -142,14 +142,14 @@ class ExternoServiceTest {
     @Test
     void validaCartao_deveRetornarTrue() {
         // ajuste os outros parâmetros, se o seu NovoCartaoDeCredito tiver mais campos
-        NovoCartaoDeCredito cartao = new NovoCartaoDeCredito("Edson", "4532015112830366", YearMonth.of(26,11),"132");
+        NovoCartaoDeCredito cartao = new NovoCartaoDeCredito("Edson", "4532015112830366", YearMonth.of(2026,11),"132");
         assertTrue(service.validaCartaoLuhn(cartao));
     }
 
     @Test
     void validaCartao_deveRetornarFalse() {
         // ajuste os outros parâmetros, se o seu NovoCartaoDeCredito tiver mais campos
-        NovoCartaoDeCredito cartao = new NovoCartaoDeCredito("Raul", "1234567890", YearMonth.of(25,11), "311");
+        NovoCartaoDeCredito cartao = new NovoCartaoDeCredito("Raul", "1234567890", YearMonth.of(2025,11), "311");
         assertFalse(service.validaCartaoLuhn(cartao));
     }
 
